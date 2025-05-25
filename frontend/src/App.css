@@ -2,14 +2,14 @@ body, html, #root, .App {
   height: 100%;
   margin: 0;
   padding: 0;
-  background: #23272F;
+  background: #0F0F1A; /* Dark background */
   font-family: 'Inter', Arial, sans-serif;
 }
 
 .home-container {
   display: flex;
   height: 100vh;
-  background: #23272F;
+  background: #0F0F1A; /* Dark background */
 }
 
 .home-illustration {
@@ -17,7 +17,7 @@ body, html, #root, .App {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #23272F;
+  background: #0F0F1A; /* Dark background */
 }
 
 .home-form-section {
@@ -27,7 +27,7 @@ body, html, #root, .App {
   justify-content: center;
   align-items: center;
   position: relative;
-  background: #23272F;
+  background: #1A1A2E; /* Slightly lighter dark background for form section */
 }
 
 .github-corner {
@@ -57,12 +57,12 @@ body, html, #root, .App {
 }
 
 .logo-sync {
-  color: #22d47b;
+  color: #7A00CC; /* Purple accent color */
 }
 
 .home-subtitle {
   font-size: 1rem;
-  color: #b0b0b0;
+  color: #CCCCCC; /* Lighter grey for subtitle */
   margin-top: 0.5rem;
   margin-bottom: 1.5rem;
 }
@@ -78,7 +78,7 @@ body, html, #root, .App {
   padding: 0.9rem 1rem;
   border-radius: 8px;
   border: none;
-  background: #32363f;
+  background: #2A2A40; /* Darker input background */
   color: #fff;
   font-size: 1rem;
   outline: none;
@@ -97,15 +97,15 @@ body, html, #root, .App {
 }
 
 .join-btn {
-  background: #22d47b;
-  color: #fff;
+  background: #4E4A96; /* Blue/purple button */
+  color: #fff; /* White text */
   margin-bottom: 0.5rem;
 }
 
 .create-btn {
-  background: #23272F;
-  color: #22d47b;
-  border: 2px solid #22d47b;
+  background: none; /* Transparent background */
+  color: #7A00CC; /* Purple text */
+  border: 2px solid #7A00CC; /* Purple border */
 }
 
 .join-btn:hover, .create-btn:hover {
@@ -115,7 +115,7 @@ body, html, #root, .App {
 .generate-room-id {
   background: none;
   border: none;
-  color: #61dafb;
+  color: #00B4D8; /* Blue link color */
   text-decoration: underline;
   cursor: pointer;
   margin-top: 1rem;
