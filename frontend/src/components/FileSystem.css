@@ -1,0 +1,154 @@
+.file-structure-view {
+    width: 250px;
+    height: 100%;
+    background-color: #1e1e1e;
+    color: #fff;
+    overflow-y: auto;
+}
+
+.file-structure-actions {
+    padding: 10px;
+    display: flex;
+    gap: 5px;
+    border-bottom: 1px solid #333;
+}
+
+.file-structure-actions button {
+    padding: 5px 10px;
+    background-color: #2d2d2d;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.file-structure-actions button:hover {
+    background-color: #3d3d3d;
+}
+
+.file-tree {
+    padding: 10px;
+}
+
+.file-tree-item {
+    margin: 2px 0;
+}
+
+.file-tree-item-content {
+    display: flex;
+    align-items: center;
+    padding: 5px;
+    cursor: pointer;
+    border-radius: 3px;
+}
+
+.file-tree-item-content:hover {
+    background-color: #2d2d2d;
+}
+
+.file-tree-item-content.selected {
+    background-color: #3d3d3d;
+}
+
+.file-icon {
+    margin-right: 5px;
+}
+
+.file-name {
+    flex: 1;
+}
+
+.file-tree-item-actions {
+    display: none;
+    gap: 5px;
+    margin-left: 20px;
+}
+
+.file-tree-item:hover .file-tree-item-actions {
+    display: flex;
+}
+
+.file-tree-item-actions button {
+    background: none;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    padding: 2px 5px;
+    border-radius: 3px;
+}
+
+.file-tree-item-actions button:hover {
+    background-color: #3d3d3d;
+}
+
+.new-item-input {
+    display: flex;
+    gap: 5px;
+    padding: 5px;
+    margin: 5px 0;
+}
+
+.new-item-input input {
+    flex: 1;
+    padding: 5px;
+    background-color: #2d2d2d;
+    color: #fff;
+    border: 1px solid #3d3d3d;
+    border-radius: 3px;
+}
+
+.new-item-input button {
+    padding: 5px 10px;
+    background-color: #2d2d2d;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.new-item-input button:hover {
+    background-color: #3d3d3d;
+}
+
+.file-tabs {
+    display: flex;
+    background-color: #1e1e1e;
+    border-bottom: 1px solid #333;
+    overflow-x: auto;
+}
+
+.file-tab {
+    display: flex;
+    align-items: center;
+    padding: 8px 15px;
+    background-color: #2d2d2d;
+    color: #fff;
+    border-right: 1px solid #333;
+    cursor: pointer;
+    min-width: 100px;
+    max-width: 200px;
+}
+
+.file-tab.active {
+    background-color: #3d3d3d;
+}
+
+.file-tab .file-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-tab .close-button {
+    background: none;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    padding: 0 5px;
+    font-size: 16px;
+}
+
+.file-tab .close-button:hover {
+    color: #ff5555;
+} 

@@ -42,12 +42,14 @@ class SocketService {
   }
 
   // Code synchronization
-  onCodeChange(callback: (code: string) => void) {
-    this.socket?.on('code-change', callback);
+  onCodeChange(handler: (code: string, file?: string) => void): void {
+    this.socket?.on('code-change', (code: string, file?: string) => {
+      handler(code, file);
+    });
   }
 
-  emitCodeChange(code: string) {
-    this.socket?.emit('code-change', code);
+  emitCodeChange(code: string, file?: string): void {
+    this.socket?.emit('code-change', code, file);
   }
 
   // Chat functionality
@@ -70,6 +72,14 @@ class SocketService {
 
   emitFileDelete(filename: string) {
     this.socket?.emit('file-delete', filename);
+  }
+
+  emitFileOpen(filename: string): void {
+    this.socket?.emit('open-file', filename);
+  }
+
+  emitFileUploaded(filename: string, content: string): void {
+    this.socket?.emit('upload-file', { filename, content });
   }
 
   // Code execution

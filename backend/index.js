@@ -83,14 +83,26 @@ io.on('connection', (socket) => {
     currentUser = username;
     socket.join(roomId);
     if (!rooms[roomId]) {
-      rooms[roomId] = { code: '// Start coding!', files: [], users: [] };
+      rooms[roomId] = {
+        code: '// Start coding!',
+        files: [],
+        users: [],
+        fileStructure: {
+          id: 'root',
+          name: 'root',
+          type: 'directory',
+          children: [],
+          isOpen: true
+        },
+        drawingData: null
+      };
     }
-    rooms[roomId].users.push(username);
+    rooms[roomId].users.push({ socketId: socket.id, username });
     // Send current code and file list to the new user
     socket.emit('code-change', rooms[roomId].code);
     socket.emit('file-list', rooms[roomId].files);
     // Notify others
-    socket.to(roomId).emit('user-joined', username);
+    socket.to(roomId).emit('user:joined', { socketId: socket.id, username });
     console.log(`${username} joined room: ${roomId}`);
   }
 
@@ -110,20 +122,68 @@ io.on('connection', (socket) => {
     }
   });
 
-  // File management
-  socket.on('file-create', (filename) => {
-    if (currentRoom) {
-      if (!rooms[currentRoom].files.includes(filename)) {
-        rooms[currentRoom].files.push(filename);
-        io.to(currentRoom).emit('file-list', rooms[currentRoom].files);
-      }
+  // File system events
+  socket.on('file:sync', ({ fileStructure, openFiles, activeFile, socketId }) => {
+    if (currentRoom && socketId) {
+      socket.to(socketId).emit('file:sync', {
+        fileStructure: rooms[currentRoom].fileStructure,
+        openFiles,
+        activeFile
+      });
     }
   });
 
-  socket.on('file-delete', (filename) => {
+  socket.on('directory:created', ({ parentDirId, newDirectory }) => {
     if (currentRoom) {
-      rooms[currentRoom].files = rooms[currentRoom].files.filter(f => f !== filename);
-      io.to(currentRoom).emit('file-list', rooms[currentRoom].files);
+      socket.to(currentRoom).emit('directory:created', { parentDirId, newDirectory });
+    }
+  });
+
+  socket.on('directory:updated', ({ dirId, children }) => {
+    if (currentRoom) {
+      socket.to(currentRoom).emit('directory:updated', { dirId, children });
+    }
+  });
+
+  socket.on('directory:renamed', ({ dirId, newDirName }) => {
+    if (currentRoom) {
+      socket.to(currentRoom).emit('directory:renamed', { dirId, newDirName });
+    }
+  });
+
+  socket.on('directory:deleted', ({ dirId }) => {
+    if (currentRoom) {
+      socket.to(currentRoom).emit('directory:deleted', { dirId });
+    }
+  });
+
+  socket.on('file:created', ({ parentDirId, newFile }) => {
+    if (currentRoom) {
+      socket.to(currentRoom).emit('file:created', { parentDirId, newFile });
+    }
+  });
+
+  socket.on('file:updated', ({ fileId, newContent }) => {
+    if (currentRoom) {
+      socket.to(currentRoom).emit('file:updated', { fileId, newContent });
+    }
+  });
+
+  socket.on('file:renamed', ({ fileId, newName }) => {
+    if (currentRoom) {
+      socket.to(currentRoom).emit('file:renamed', { fileId, newName });
+    }
+  });
+
+  socket.on('file:deleted', ({ fileId }) => {
+    if (currentRoom) {
+      socket.to(currentRoom).emit('file:deleted', { fileId });
+    }
+  });
+
+  socket.on('drawing:sync', ({ drawingData, socketId }) => {
+    if (currentRoom && socketId) {
+      socket.to(socketId).emit('drawing:sync', { drawingData: rooms[currentRoom].drawingData });
     }
   });
 
@@ -149,7 +209,7 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     if (currentRoom && currentUser) {
-      rooms[currentRoom].users = rooms[currentRoom].users.filter(u => u !== currentUser);
+      rooms[currentRoom].users = rooms[currentRoom].users.filter(u => u.username !== currentUser);
       socket.to(currentRoom).emit('user-left', currentUser);
     }
     console.log('A user disconnected:', socket.id);

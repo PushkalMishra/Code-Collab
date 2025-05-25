@@ -5,6 +5,87 @@
   color: #fff;
 }
 
+/* Styles for when the file panel is open */
+.editor-container.file-panel-open .file-panel {
+    width: 250px; /* Define a default width for the open sidebar */
+    min-width: 200px;
+    transition: width 0.3s ease-in-out;
+}
+
+/* Styles for when the file panel is collapsed */
+.editor-container.file-panel-collapsed .file-panel {
+    width: 30px; /* Keep a small width to show the toggle button */
+    min-width: 30px;
+    overflow: hidden; /* Hide content when collapsed */
+    transition: width 0.3s ease-in-out;
+}
+
+/* Adjust main panel to take remaining space */
+.editor-container.file-panel-open .main-panel {
+    flex: 1; /* Take remaining space */
+}
+
+.editor-container.file-panel-collapsed .main-panel {
+    flex: 1; /* Still take remaining space */
+}
+
+.file-panel {
+    background-color: #252526;
+    width: 250px;
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #333;
+    transition: width 0.3s ease-in-out, min-width 0.3s ease-in-out;
+    overflow: hidden; /* Hide content when collapsed */
+}
+
+.file-panel.collapsed {
+    width: 30px; /* Keep a small width to show the toggle button */
+    min-width: 30px;
+    overflow: hidden; /* Hide the content inside */
+}
+
+.file-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background-color: #333;
+    /* Ensure header content is visible even when collapsed */
+     white-space: nowrap;
+}
+
+.file-panel-header span {
+    /* Hide the "Files" text when collapsed */
+     display: block;
+}
+
+.file-panel.collapsed .file-panel-header span {
+    display: none;
+}
+
+.file-panel-header .toggle-button {
+     /* Ensure the toggle button is always visible */
+     padding: 5px;
+     background: none;
+     border: none;
+     color: #fff;
+     cursor: pointer;
+}
+
+.file-structure-view-container {
+    flex: 1;
+    overflow-y: auto;
+    /* Only show content when not collapsed */
+     display: flex;
+     flex-direction: column;
+}
+
+.file-panel.collapsed .file-structure-view-container {
+     display: none;
+}
+
 .sidebar {
   width: 60px;
   background-color: #252526;
@@ -13,6 +94,7 @@
   align-items: center;
   padding: 20px 0;
   border-right: 1px solid #333;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 .sidebar-icon {
@@ -49,6 +131,7 @@
   display: flex;
   gap: 10px;
   align-items: center;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 .editor-toolbar select,
@@ -90,6 +173,7 @@
   border-top: 1px solid #333;
   overflow-y: auto;
   max-height: 30vh;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 .execution-result h3 {
@@ -175,4 +259,55 @@
   background-color: #1e1e1e;
   border-radius: 8px;
   padding: 20px;
+}
+
+/* Styles for the toggleable file panel */
+.file-actions {
+    display: flex;
+    padding: 10px;
+    gap: 10px;
+    background-color: #333;
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+.file-actions button {
+    padding: 5px 10px;
+    background-color: #3c3c3c;
+    border: 1px solid #555;
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.file-actions button:hover {
+    background-color: #4c4c4c;
+}
+
+/* Styles for the main content area */
+.main-content-area {
+  flex: 1; /* Take the remaining space */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Hide overflow content */
+}
+
+.code-panel,
+.chat-panel,
+.copilot-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Ensure panels fill the height of main-content-area */
+}
+
+/* No need for specific styles on main-content-area based on file-panel-open class on itself */
+/* The sibling .file-panel's width change will push the main-content-area */
+
+/* Existing file structure view styles - ensure they work within the flex column */
+.file-structure-view-container {
+    flex: 1; /* Allow it to grow and shrink */
+    overflow-y: auto; /* Enable scrolling if content exceeds height */
+    display: flex; /* Keep display flex if needed for its internal layout */
+    flex-direction: column;
+    padding: 10px;
 } 

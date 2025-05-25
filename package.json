@@ -5,6 +5,7 @@
     "start": "concurrently \"npm run start --prefix backend\" \"npm run start --prefix frontend\""
   },
   "devDependencies": {
+    "@types/uuid": "^10.0.0",
     "concurrently": "^8.2.2"
   },
   "dependencies": {
