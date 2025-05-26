@@ -3,7 +3,7 @@ import { Socket } from 'socket.io-client';
 import SocketService from '../services/socketService';
 
 interface SocketContextType {
-    socket: Socket;
+    socket: Socket | null;
 }
 
 const SocketContext = createContext<SocketContextType | null>(null);
@@ -18,7 +18,7 @@ export const useSocket = () => {
 
 interface SocketContextProviderProps {
     children: ReactNode;
-    socket: Socket;
+    socket: Socket | null;
 }
 
 export const SocketContextProvider: React.FC<SocketContextProviderProps> = ({ children, socket }) => {

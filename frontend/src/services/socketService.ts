@@ -1,4 +1,6 @@
 import { io, Socket } from 'socket.io-client';
+import { FileContent, Id } from '../types/file'; // Import necessary types
+import { SocketEvent } from '../types/socket'; // Import SocketEvent enum
 
 class SocketService {
   private socket: Socket | null = null;
@@ -80,6 +82,17 @@ class SocketService {
 
   emitFileUploaded(filename: string, content: string): void {
     this.socket?.emit('upload-file', { filename, content });
+  }
+
+  // Add methods for file content synchronization
+  onFileUpdated(handler: (fileId: Id, newContent: FileContent) => void): void {
+    this.socket?.on(SocketEvent.FILE_UPDATED, ({ fileId, newContent }: { fileId: Id, newContent: FileContent }) => {
+      handler(fileId, newContent);
+    });
+  }
+
+  emitFileUpdated(fileId: Id, newContent: FileContent): void {
+    this.socket?.emit(SocketEvent.FILE_UPDATED, { fileId, newContent });
   }
 
   // Code execution

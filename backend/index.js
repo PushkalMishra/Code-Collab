@@ -2,11 +2,17 @@ import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import mongoose from 'mongoose';
 import { executors } from './executors/index.js';
 import { exec } from 'child_process';
 import { writeFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import File from './models/File.js';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
@@ -15,6 +21,19 @@ const io = new Server(server, {
     origin: '*',
     methods: ['GET', 'POST']
   }
+});
+
+// MongoDB connection URL from environment variable or default
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/codecollab';
+
+// Connect to MongoDB
+mongoose.connect(MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+}).then(() => {
+  console.log('Connected to MongoDB');
+}).catch(err => {
+  console.error('MongoDB connection error:', err);
 });
 
 app.use(cors());
@@ -82,10 +101,10 @@ io.on('connection', (socket) => {
     currentRoom = roomId;
     currentUser = username;
     socket.join(roomId);
+
+    // Initialize room if it doesn't exist
     if (!rooms[roomId]) {
       rooms[roomId] = {
-        code: '// Start coding!',
-        files: [],
         users: [],
         fileStructure: {
           id: 'root',
@@ -93,17 +112,60 @@ io.on('connection', (socket) => {
           type: 'directory',
           children: [],
           isOpen: true
-        },
-        drawingData: null
+        }
       };
     }
+
+    // Add user to room
     rooms[roomId].users.push({ socketId: socket.id, username });
-    // Send current code and file list to the new user
-    socket.emit('code-change', rooms[roomId].code);
-    socket.emit('file-list', rooms[roomId].files);
-    // Notify others
-    socket.to(roomId).emit('user:joined', { socketId: socket.id, username });
-    console.log(`${username} joined room: ${roomId}`);
+
+    // Load files from MongoDB for this room
+    File.find({ roomId }).then(files => {
+      // Convert flat file structure to tree
+      const fileMap = new Map();
+      const root = {
+        id: 'root',
+        name: 'root',
+        type: 'directory',
+        children: [],
+        isOpen: true
+      };
+      fileMap.set('root', root);
+
+      files.forEach(file => {
+        const fileNode = {
+          id: file.id,
+          name: file.name,
+          type: file.type,
+          content: file.content,
+          children: file.type === 'directory' ? [] : undefined,
+          isOpen: file.type === 'directory' ? false : undefined
+        };
+        fileMap.set(file.id, fileNode);
+
+        if (file.parentId) {
+          const parent = fileMap.get(file.parentId);
+          if (parent && parent.children) {
+            parent.children.push(fileNode);
+          }
+        } else {
+          root.children.push(fileNode);
+        }
+      });
+
+      rooms[roomId].fileStructure = root;
+      
+      // Send current file structure to the new user
+      socket.emit('file:sync', {
+        fileStructure: root,
+        openFiles: [],
+        activeFile: null
+      });
+
+      // Notify others
+      socket.to(roomId).emit('user:joined', { socketId: socket.id, username });
+      console.log(`${username} joined room: ${roomId}`);
+    });
   }
 
   // Real-time code sync
@@ -157,15 +219,36 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('file:created', ({ parentDirId, newFile }) => {
+  socket.on('file:created', async ({ parentDirId, newFile }) => {
     if (currentRoom) {
-      socket.to(currentRoom).emit('file:created', { parentDirId, newFile });
+      try {
+        await File.create({
+          id: newFile.id,
+          name: newFile.name,
+          type: newFile.type,
+          content: newFile.content || '',
+          parentId: parentDirId,
+          roomId: currentRoom
+        });
+        socket.to(currentRoom).emit('file:created', { parentDirId, newFile });
+      } catch (error) {
+        console.error('Error creating file:', error);
+      }
     }
   });
 
-  socket.on('file:updated', ({ fileId, newContent }) => {
+  socket.on('file:updated', async ({ fileId, newContent }) => {
     if (currentRoom) {
-      socket.to(currentRoom).emit('file:updated', { fileId, newContent });
+      try {
+        await File.findOneAndUpdate(
+          { id: fileId, roomId: currentRoom },
+          { content: newContent },
+          { new: true }
+        );
+        socket.to(currentRoom).emit('file:updated', { fileId, newContent });
+      } catch (error) {
+        console.error('Error updating file:', error);
+      }
     }
   });
 
@@ -175,9 +258,14 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('file:deleted', ({ fileId }) => {
+  socket.on('file:deleted', async ({ fileId }) => {
     if (currentRoom) {
-      socket.to(currentRoom).emit('file:deleted', { fileId });
+      try {
+        await File.deleteOne({ id: fileId, roomId: currentRoom });
+        socket.to(currentRoom).emit('file:deleted', { fileId });
+      } catch (error) {
+        console.error('Error deleting file:', error);
+      }
     }
   });
 
