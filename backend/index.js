@@ -28,12 +28,14 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/codeco
 
 // Connect to MongoDB
 mongoose.connect(MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+  family: 4
 }).then(() => {
   console.log('Connected to MongoDB');
 }).catch(err => {
   console.error('MongoDB connection error:', err);
+  process.exit(1);
 });
 
 app.use(cors());
@@ -187,11 +189,16 @@ io.on('connection', (socket) => {
   // File system events
   socket.on('file:sync', ({ fileStructure, openFiles, activeFile, socketId }) => {
     if (currentRoom && socketId) {
-      socket.to(socketId).emit('file:sync', {
-        fileStructure: rooms[currentRoom].fileStructure,
-        openFiles,
-        activeFile
-      });
+      try {
+        socket.to(socketId).emit('file:sync', {
+          fileStructure: rooms[currentRoom].fileStructure,
+          openFiles,
+          activeFile
+        });
+      } catch (error) {
+        console.error('Error syncing files:', error);
+        socket.emit('error', { message: 'Failed to sync files' });
+      }
     }
   });
 
@@ -233,6 +240,7 @@ io.on('connection', (socket) => {
         socket.to(currentRoom).emit('file:created', { parentDirId, newFile });
       } catch (error) {
         console.error('Error creating file:', error);
+        socket.emit('error', { message: 'Failed to create file' });
       }
     }
   });
@@ -243,11 +251,12 @@ io.on('connection', (socket) => {
         await File.findOneAndUpdate(
           { id: fileId, roomId: currentRoom },
           { content: newContent },
-          { new: true }
+          { new: true, maxTimeMS: 5000 }
         );
         socket.to(currentRoom).emit('file:updated', { fileId, newContent });
       } catch (error) {
         console.error('Error updating file:', error);
+        socket.emit('error', { message: 'Failed to update file' });
       }
     }
   });

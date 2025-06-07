@@ -151,4 +151,31 @@
 
 .file-tab .close-button:hover {
     color: #ff5555;
+}
+
+.file-panel-header {
+    padding: 10px;
+    border-bottom: 1px solid #333;
+}
+
+.open-directory-button {
+    width: 100%;
+    padding: 8px 12px;
+    background-color: #2d2d2d;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.open-directory-button:hover {
+    background-color: #3d3d3d;
+}
+
+.open-directory-button:disabled {
+    background-color: #1d1d1d;
+    cursor: not-allowed;
+    opacity: 0.7;
 } 

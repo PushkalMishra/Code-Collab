@@ -5,6 +5,7 @@
     "start": "concurrently \"npm run start --prefix backend\" \"npm run start --prefix frontend\""
   },
   "devDependencies": {
+    "@types/react-icons": "^2.2.7",
     "@types/uuid": "^10.0.0",
     "concurrently": "^8.2.2"
   },
@@ -13,6 +14,7 @@
     "@types/react-router-dom": "^5.3.3",
     "monaco-editor": "^0.52.2",
     "mongoose": "^8.15.0",
+    "react-icons": "^5.3.0",
     "react-router-dom": "^7.6.0",
     "socket.io-client": "^4.8.1"
   }

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import './App.css';
-import RoomForm from './components/RoomForm';
+import '../App.css';
+import RoomForm from '../components/RoomForm';
 import { useNavigate } from 'react-router-dom';
 
 const generateRoomId = () => {

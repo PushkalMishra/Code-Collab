@@ -6,7 +6,7 @@ import { SocketContextProvider } from '../context/SocketContext';
 import { AppContextProvider } from '../context/AppContext';
 import MainContentArea from '../components/editor/MainContentArea';
 import FilePanel from '../components/editor/FilePanel';
-import Sidebar from '../components/editor/Sidebar';
+import Sidebar from '../components/sidebar/Sidebar';
 import { useSocketConnection } from '../hooks/useSocketConnection';
 import { usePanelManagement } from '../hooks/usePanelManagement';
 import { useLanguage } from '../hooks/useLanguage';
@@ -47,7 +47,7 @@ const EditorPage: React.FC = () => {
                         <Sidebar 
                             activePanel={activePanel}
                             setActivePanel={switchPanel}
-                            setIsFilePanelOpen={(isOpen) => isOpen && switchPanel('code')}
+                            setIsFilePanelOpen={(isOpen: boolean) => isOpen && switchPanel('code')}
                         />
                         <FilePanel isOpen={isFilePanelOpen} />
                         <MainContentArea
