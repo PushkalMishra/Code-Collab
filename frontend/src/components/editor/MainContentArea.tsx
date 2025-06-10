@@ -1,5 +1,5 @@
-import React from 'react';
-import { PanelType } from '../../hooks/usePanelManagement';
+import React, { useState } from 'react';
+import { PanelType } from '../sidebar/views/types';
 import { LanguageType } from '../../hooks/useLanguage';
 import { useFileSystem } from '../../context/FileContext';
 import MonacoEditor from '@monaco-editor/react';
@@ -28,6 +28,7 @@ const MainContentArea: React.FC<MainContentAreaProps> = ({
 }) => {
     const { activeFile, updateFileContent } = useFileSystem();
     const socketService = SocketService.getInstance();
+    const [customInput, setCustomInput] = useState<string>('');
 
     const handleEditorChange = (value: string | undefined) => {
         if (value !== undefined && activeFile) {
@@ -45,7 +46,7 @@ const MainContentArea: React.FC<MainContentAreaProps> = ({
 
     const handleExecuteCode = () => {
         if (activeFile) {
-            socketService.emitExecuteCode(activeFile.content || '', language);
+            socketService.emitExecuteCode(activeFile.content || '', language, customInput);
         }
     };
 
@@ -76,7 +77,7 @@ const MainContentArea: React.FC<MainContentAreaProps> = ({
                         </div>
                         <FileTab />
                         <MonacoEditor
-                            height="100%"
+                            height="calc(100% - 150px)"
                             language={language}
                             value={activeFile.content || ''}
                             onChange={handleEditorChange}
@@ -88,14 +89,19 @@ const MainContentArea: React.FC<MainContentAreaProps> = ({
                                 automaticLayout: true,
                             }}
                         />
-                        {executionResult && (
-                            <div className="execution-result">
-                                <h3>Execution Result:</h3>
-                                <pre className={executionResult.error ? 'error' : ''}>
-                                    {executionResult.error || executionResult.output}
-                                </pre>
-                            </div>
-                        )}
+                        <div className="input-output-area">
+                            <h3>Custom Input:</h3>
+                            <textarea
+                                className="custom-input-textarea"
+                                value={customInput}
+                                onChange={(e) => setCustomInput(e.target.value)}
+                                placeholder="Enter custom input here (e.g., for input() calls in Python)"
+                            />
+                            <h3>Execution Result:</h3>
+                            <pre className={`execution-result-pre ${executionResult?.error ? 'error' : ''}`}>
+                                {executionResult?.error || executionResult?.output || 'No output yet.'}
+                            </pre>
+                        </div>
                     </div>
                 );
             case 'chat':

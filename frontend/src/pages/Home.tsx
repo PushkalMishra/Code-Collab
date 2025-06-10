@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import '../App.css';
 import RoomForm from '../components/RoomForm';
-import { useNavigate } from 'react-router-dom';
 
 const generateRoomId = () => {
   return Math.random().toString(36).substr(2, 9);
@@ -10,7 +10,21 @@ const generateRoomId = () => {
 const Home: React.FC = () => {
   const [roomId, setRoomId] = useState('');
   const [username, setUsername] = useState('');
+  const [isJoining, setIsJoining] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Extract roomId from URL if present
+  useEffect(() => {
+    const pathParts = location.pathname.split('/');
+    if (pathParts.length > 1 && pathParts[1] === 'join') {
+      const urlRoomId = pathParts[2];
+      if (urlRoomId) {
+        setRoomId(urlRoomId);
+        setIsJoining(true);
+      }
+    }
+  }, [location]);
 
   const handleGenerateRoomId = () => {
     setRoomId(generateRoomId());
@@ -18,22 +32,26 @@ const Home: React.FC = () => {
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (roomId && username) {
-      navigate(`/editor/${roomId}`, { state: { username } });
-    } else {
-      alert('Please enter both Room ID and Username');
+    if (!username.trim()) {
+      alert('Please enter a username');
+      return;
     }
+    if (!roomId.trim()) {
+      alert('Please enter a Room ID');
+      return;
+    }
+    navigate(`/editor/${roomId}`, { state: { username } });
   };
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!username.trim()) {
+      alert('Please enter a username');
+      return;
+    }
     const newRoomId = roomId || generateRoomId();
     setRoomId(newRoomId);
-    if (username) {
-      navigate(`/editor/${newRoomId}`, { state: { username } });
-    } else {
-      alert('Please enter a Username');
-    }
+    navigate(`/editor/${newRoomId}`, { state: { username } });
   };
 
   return (
@@ -63,6 +81,7 @@ const Home: React.FC = () => {
           handleJoin={handleJoin}
           handleCreate={handleCreate}
           handleGenerateRoomId={handleGenerateRoomId}
+          isJoining={isJoining}
         />
       </div>
     </div>

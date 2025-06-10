@@ -1,20 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import './Editor.css';
-import { FileContextProvider } from '../context/FileContext';
-import { SocketContextProvider } from '../context/SocketContext';
-import { AppContextProvider } from '../context/AppContext';
 import MainContentArea from '../components/editor/MainContentArea';
 import FilePanel from '../components/editor/FilePanel';
-import Sidebar from '../components/sidebar/Sidebar';
+import { Sidebar } from '../components/sidebar/Sidebar';
+import { UsersView } from '../components/editor/UsersView';
 import { useSocketConnection } from '../hooks/useSocketConnection';
 import { usePanelManagement } from '../hooks/usePanelManagement';
 import { useLanguage } from '../hooks/useLanguage';
+import { useAppContext } from '../context/AppContext';
 
 const EditorPage: React.FC = () => {
     const { roomId } = useParams();
     const location = useLocation();
     const [newMessage, setNewMessage] = useState('');
+    const { setSocket } = useAppContext();
 
     // Custom hooks
     const { activePanel, isFilePanelOpen, switchPanel } = usePanelManagement();
@@ -24,11 +24,19 @@ const EditorPage: React.FC = () => {
         (location.state as { username: string })?.username || ''
     );
 
+    const socket = socketService.getSocket();
+
+    // Update socket in context - moved before any conditional returns
+    useEffect(() => {
+        if (socket) {
+            setSocket(socket);
+        }
+    }, [socket, setSocket]);
+
+    // Early returns after all hooks
     if (!roomId) {
         return <div>Invalid room ID</div>;
     }
-
-    const socket = socketService.getSocket();
 
     if (!socket || !isConnected) {
         return (
@@ -40,29 +48,24 @@ const EditorPage: React.FC = () => {
     }
 
     return (
-        <AppContextProvider>
-            <SocketContextProvider socket={socket}>
-                <FileContextProvider>
-                    <div className="editor-container">
-                        <Sidebar 
-                            activePanel={activePanel}
-                            setActivePanel={switchPanel}
-                            setIsFilePanelOpen={(isOpen: boolean) => isOpen && switchPanel('code')}
-                        />
-                        <FilePanel isOpen={isFilePanelOpen} />
-                        <MainContentArea
-                            activePanel={activePanel}
-                            language={language}
-                            setLanguage={changeLanguage}
-                            chatMessages={chatMessages}
-                            newMessage={newMessage}
-                            setNewMessage={setNewMessage}
-                            executionResult={executionResult}
-                        />
-                    </div>
-                </FileContextProvider>
-            </SocketContextProvider>
-        </AppContextProvider>
+        <div className="editor-container">
+            <Sidebar 
+                activePanel={activePanel}
+                setActivePanel={switchPanel}
+                setIsFilePanelOpen={(isOpen: boolean) => isOpen && switchPanel('code')}
+            />
+            <FilePanel isOpen={isFilePanelOpen} />
+            <MainContentArea
+                activePanel={activePanel}
+                language={language}
+                setLanguage={changeLanguage}
+                chatMessages={chatMessages}
+                newMessage={newMessage}
+                setNewMessage={setNewMessage}
+                executionResult={executionResult}
+            />
+            <UsersView />
+        </div>
     );
 };
 

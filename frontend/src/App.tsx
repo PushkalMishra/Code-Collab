@@ -9,18 +9,19 @@ import { AppContextProvider } from './context/AppContext';
 
 function App() {
   return (
-    <AppContextProvider>
-      <SocketContextProvider socket={null}>
-        <FileContextProvider>
-          <Router>
+    <Router>
+      <AppContextProvider>
+        <SocketContextProvider socket={null}>
+          <FileContextProvider>
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/join/:roomId" element={<Home />} />
               <Route path="/editor/:roomId" element={<Editor />} />
             </Routes>
-          </Router>
-        </FileContextProvider>
-      </SocketContextProvider>
-    </AppContextProvider>
+          </FileContextProvider>
+        </SocketContextProvider>
+      </AppContextProvider>
+    </Router>
   );
 }
 

@@ -1,8 +1,8 @@
 import React from 'react';
 import { SidebarIcon } from '../SidebarIcon';
-import { SidebarViewProps } from '../../../types/sidebar.types';
+import { CodeViewProps } from './types';
 
-export const CodeView: React.FC<SidebarViewProps> = ({ activePanel, setActivePanel, setIsFilePanelOpen }) => (
+export const CodeView: React.FC<CodeViewProps> = ({ activePanel, setActivePanel, setIsFilePanelOpen }) => (
     <SidebarIcon
         icon={<span>📄</span>}
         label="Files"

@@ -1,8 +1,8 @@
 import React from 'react';
 import { SidebarIcon } from '../SidebarIcon';
-import { SidebarViewProps } from '../../../types/sidebar.types';
+import { ChatViewProps } from './types';
 
-export const ChatView: React.FC<SidebarViewProps> = ({ activePanel, setActivePanel, setIsFilePanelOpen }) => (
+export const ChatView: React.FC<ChatViewProps> = ({ activePanel, setActivePanel, setIsFilePanelOpen }) => (
     <SidebarIcon
         icon={<span>💬</span>}
         label="Chat"

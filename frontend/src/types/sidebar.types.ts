@@ -1,4 +1,4 @@
-export type PanelType = 'code' | 'chat' | 'copilot';
+export type PanelType = 'code' | 'chat' | 'copilot' | 'room';
 
 export interface SidebarIconProps {
     icon: React.ReactNode;

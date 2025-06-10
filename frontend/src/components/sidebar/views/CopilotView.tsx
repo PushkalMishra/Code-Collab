@@ -1,8 +1,8 @@
 import React from 'react';
 import { SidebarIcon } from '../SidebarIcon';
-import { SidebarViewProps } from '../../../types/sidebar.types';
+import { CopilotViewProps } from './types';
 
-export const CopilotView: React.FC<SidebarViewProps> = ({ activePanel, setActivePanel, setIsFilePanelOpen }) => (
+export const CopilotView: React.FC<CopilotViewProps> = ({ activePanel, setActivePanel, setIsFilePanelOpen }) => (
     <SidebarIcon
         icon={<span>🤖</span>}
         label="Copilot"

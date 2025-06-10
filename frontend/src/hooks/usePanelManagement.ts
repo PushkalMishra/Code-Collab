@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
-
-export type PanelType = 'code' | 'chat' | 'copilot';
+import { PanelType } from '../components/sidebar/views/types';
 
 export const usePanelManagement = () => {
     const [activePanel, setActivePanel] = useState<PanelType>('code');
