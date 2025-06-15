@@ -3,9 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAppContext } from '../../context/AppContext';
 import { Users } from './Users';
-import './UsersView.css';
+import './UsersPanel.css';
 
-export const UsersView: React.FC = () => {
+interface UsersPanelProps {
+    isOpen: boolean;
+}
+
+export const UsersPanel: React.FC<UsersPanelProps> = ({ isOpen }) => {
     const navigate = useNavigate();
     const { socket, setStatus, users } = useAppContext();
 
@@ -52,8 +56,10 @@ export const UsersView: React.FC = () => {
         toast.success('Left the room successfully');
     };
 
+    if (!isOpen) return null;
+
     return (
-        <div className="users-view bg-gray-800 rounded-lg shadow-lg p-4 min-w-[280px] max-w-[320px]">
+        <div className="users-panel bg-gray-800 rounded-lg shadow-lg p-4 min-w-[280px] max-w-[320px]">
             <div className="mb-4">
                 <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
                     <span>Users in Room</span>

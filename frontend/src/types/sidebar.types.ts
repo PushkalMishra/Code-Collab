@@ -1,4 +1,4 @@
-export type PanelType = 'code' | 'chat' | 'copilot' | 'room';
+export type PanelType = 'code' | 'chat' | 'copilot' | 'users';
 
 export interface SidebarIconProps {
     icon: React.ReactNode;
@@ -8,7 +8,8 @@ export interface SidebarIconProps {
 }
 
 export interface SidebarViewProps {
-    activePanel: PanelType;
-    setActivePanel: (panel: PanelType) => void;
-    setIsFilePanelOpen: (isOpen: boolean) => void;
+    activePanel: PanelType | null;
+    switchPanel: (panel: PanelType) => void;
+    isPanelOpen: boolean;
+    togglePanel: () => void;
 } 

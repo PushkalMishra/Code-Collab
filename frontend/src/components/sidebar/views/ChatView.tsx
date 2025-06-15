@@ -2,14 +2,13 @@ import React from 'react';
 import { SidebarIcon } from '../SidebarIcon';
 import { ChatViewProps } from './types';
 
-export const ChatView: React.FC<ChatViewProps> = ({ activePanel, setActivePanel, setIsFilePanelOpen }) => (
+export const ChatView: React.FC<ChatViewProps> = ({ activePanel, switchPanel, isPanelOpen }) => (
     <SidebarIcon
         icon={<span>💬</span>}
         label="Chat"
-        active={activePanel === 'chat'}
+        active={activePanel === 'chat' && isPanelOpen}
         onClick={() => {
-            setActivePanel('chat');
-            setIsFilePanelOpen(false);
+            switchPanel('chat');
         }}
     />
 ); 

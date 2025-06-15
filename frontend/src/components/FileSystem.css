@@ -115,12 +115,13 @@
     background-color: #1e1e1e;
     border-bottom: 1px solid #333;
     overflow-x: auto;
+    flex-grow: 0;
+    flex-shrink: 0;
 }
 
 .file-tab {
     display: flex;
     align-items: center;
-    padding: 8px 15px;
     background-color: #2d2d2d;
     color: #fff;
     border-right: 1px solid #333;
