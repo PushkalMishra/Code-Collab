@@ -9,13 +9,12 @@ interface ChatMessage {
 }
 
 interface ChatPanelProps {
-    isOpen: boolean;
     chatMessages: Array<ChatMessage>;
     newMessage: string;
     setNewMessage: (message: string) => void;
 }
 
-export const ChatPanel: React.FC<ChatPanelProps> = ({ isOpen, chatMessages, newMessage, setNewMessage }) => {
+export const ChatPanel: React.FC<ChatPanelProps> = ({ chatMessages, newMessage, setNewMessage }) => {
     const { socket } = useSocket(); // Use the useSocket hook to get the socket instance
     const socketService = SocketService.getInstance();
 
@@ -26,8 +25,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ isOpen, chatMessages, newM
             setNewMessage('');
         }
     };
-
-    if (!isOpen) return null;
 
     return (
         <div className="chat-panel">

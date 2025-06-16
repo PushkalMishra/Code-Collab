@@ -6,6 +6,7 @@ export interface FileSystemItem {
     id: Id
     name: FileName
     type: 'file' | 'directory'
+    parentId: string | null; // <--- Add this line
     content?: FileContent
     children?: FileSystemItem[]
     isOpen?: boolean
@@ -29,4 +30,4 @@ export interface FileContext {
     renameFile: (fileId: string, newName: string, sendToSocket?: boolean) => boolean
     deleteFile: (fileId: string, sendToSocket?: boolean) => void
     downloadFilesAndFolders: () => void
-} 
+}

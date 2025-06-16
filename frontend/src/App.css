@@ -141,89 +141,558 @@ body, html, #root, .App {
   }
 }
 
-.room-form-container {
-  width: 100%;
-  max-width: 400px;
-  margin: 0 auto;
+.landing-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f0f2f5; /* Light grey background */
+  font-family: 'Inter', sans-serif;
 }
 
-.form-group {
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 3rem;
+  background-color: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.navbar-brand {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #333333;
+}
+
+.navbar-links {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.navbar-links li {
+  margin-left: 2rem;
+}
+
+.navbar-links a {
+  text-decoration: none;
+  color: #555555;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.navbar-links a:hover {
+  color: #007bff; /* A blue hover color */
+}
+
+.navbar-auth .get-started-button {
+  background-color: #000080; /* Dark blue */
+  color: #ffffff;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.navbar-auth .get-started-button:hover {
+  background-color: #000066;
+}
+
+.landing-content {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+  padding: 4rem 3rem;
+  gap: 4rem;
+}
+
+.hero-section {
+  flex: 1;
+  max-width: 600px;
+  text-align: left;
+}
+
+.hero-section h1 {
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: #333333;
+  line-height: 1.2;
   margin-bottom: 1rem;
 }
 
-.form-group label {
-  display: block;
+.hero-section p {
+  font-size: 1.2rem;
+  color: #666666;
+  line-height: 1.5;
   margin-bottom: 0.5rem;
-  color: #fff;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.hero-buttons .get-started-button {
+  background-color: #000080; /* Dark blue */
+  color: #ffffff;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 5px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.hero-buttons .get-started-button:hover {
+  background-color: #000066;
+}
+
+.hero-buttons .youtube-button {
+  background-color: #ffffff;
+  color: #000080; /* Dark blue */
+  padding: 1rem 2rem;
+  border: 2px dashed #000080;
+  border-radius: 5px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.hero-buttons .youtube-button:hover {
+  background-color: #000080;
+  color: #ffffff;
+}
+
+.login-section,
+.register-page {
+  flex: 0.8;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-card,
+.register-card {
+  background-color: #ffffff;
+  padding: 2.5rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.login-card h2,
+.register-card h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #333333;
+  margin-bottom: 1.5rem;
+}
+
+.login-card input,
+.register-card input {
+  width: calc(100% - 2rem);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid #dddddd;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+.login-card input::placeholder,
+.register-card input::placeholder {
+  color: #aaaaaa;
+}
+
+.forgot-password {
+  display: block;
+  text-align: right;
+  margin-bottom: 1.5rem;
+  color: #007bff;
+  text-decoration: none;
   font-size: 0.9rem;
+  transition: color 0.3s ease;
 }
 
-.input-group {
-  display: flex;
-  gap: 0.5rem;
+.forgot-password:hover {
+  color: #0056b3;
 }
 
-.home-input {
-  flex: 1;
-  padding: 0.75rem;
-  border: 1px solid #4a5568;
-  border-radius: 0.375rem;
-  background-color: #2d3748;
-  color: #fff;
-  font-size: 1rem;
-  transition: border-color 0.2s;
-}
-
-.home-input:focus {
-  outline: none;
-  border-color: #4299e1;
-}
-
-.generate-btn {
-  padding: 0.75rem 1rem;
-  background-color: #4a5568;
-  color: #fff;
+.continue-button {
+  background-color: #000080; /* Dark blue */
+  color: #ffffff;
+  width: 100%;
+  padding: 1rem;
   border: none;
-  border-radius: 0.375rem;
+  border-radius: 5px;
+  font-size: 1.1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.3s ease;
 }
 
-.generate-btn:hover {
-  background-color: #2d3748;
+.continue-button:hover {
+  background-color: #000066;
 }
 
-.button-group {
-  display: flex;
-  gap: 1rem;
+.register-link,
+.login-link {
   margin-top: 1.5rem;
-}
-
-.home-btn {
-  flex: 1;
-  padding: 0.75rem;
-  border: none;
-  border-radius: 0.375rem;
   font-size: 1rem;
+  color: #555555;
+}
+
+.register-link a,
+.login-link a {
+  color: #007bff;
+  text-decoration: none;
   font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
+  transition: color 0.3s ease;
 }
 
-.join-btn {
-  background-color: #4299e1;
-  color: #fff;
+.register-link a:hover,
+.login-link a:hover {
+  color: #0056b3;
 }
 
-.join-btn:hover {
-  background-color: #3182ce;
+/* Media Queries for Responsiveness */
+@media (max-width: 1024px) {
+  .landing-content {
+    flex-direction: column;
+    padding: 2rem;
+    gap: 2rem;
+  }
+
+  .hero-section {
+    text-align: center;
+    max-width: 100%;
+  }
+
+  .hero-buttons {
+    justify-content: center;
+  }
+
+  .login-section, .register-page {
+    width: 100%;
+  }
 }
 
-.create-btn {
-  background-color: #48bb78;
-  color: #fff;
+@media (max-width: 768px) {
+  .navbar {
+    flex-direction: column;
+    padding: 1rem;
+  }
+
+  .navbar-links {
+    margin-top: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .navbar-links li {
+    margin: 0.5rem 1rem;
+  }
+
+  .navbar-auth {
+    margin-top: 1rem;
+  }
+
+  .hero-section h1 {
+    font-size: 2.5rem;
+  }
+
+  .hero-section p {
+    font-size: 1rem;
+  }
+
+  .hero-buttons button {
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+  }
+
+  .login-card, .register-card {
+    padding: 1.5rem;
+  }
+
+  .login-card h2, .register-card h2 {
+    font-size: 1.8rem;
+  }
+
+  .login-card input, .register-card input {
+    padding: 0.8rem;
+    font-size: 0.9rem;
+  }
+
+  .continue-button {
+    padding: 0.9rem;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-brand {
+    font-size: 1.5rem;
+  }
+
+  .navbar-links li {
+    margin: 0.3rem 0.5rem;
+  }
+
+  .hero-section h1 {
+    font-size: 2rem;
+  }
+
+  .hero-buttons {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .hero-buttons button {
+    width: 100%;
+  }
+}
+
+/* Login/Register Flip Card Styles */
+.login-section {
+  perspective: 1000px; /* For 3D effect */
+}
+
+.flip-card {
+  background-color: transparent;
+  width: 400px; /* Or appropriate width */
+  height: 550px; /* Or appropriate height */
+  border: 1px solid #f1f1f1;
+  perspective: 1000px; /* Remove if parent has perspective */
+}
+
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.8s; /* Smooth flip animation */
+  transform-style: preserve-3d;
+}
+
+.login-section.is-registering .flip-card-inner {
+  transform: rotateY(180deg);
+}
+
+.flip-card-front, .flip-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden; /* Safari */
+  backface-visibility: hidden;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  background-color: #ffffff; /* Same as login/register card background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2.5rem;
+  box-sizing: border-box; /* Include padding in element's total width and height */
+}
+
+.flip-card-back {
+  transform: rotateY(180deg);
+}
+
+/* Ensure the cards within the flip card take full width */
+.flip-card-front .login-card,
+.flip-card-back .register-card {
+  width: 100%;
+}
+
+.room-form-section {
+  flex: 0.8;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.room-card {
+  background-color: #ffffff;
+  padding: 2.5rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.home-illustration-new {
+  flex: 1.2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+@media (max-width: 1024px) {
+  .room-form-section {
+    width: 100%;
+  }
+  .home-illustration-new {
+    display: none; /* Hide illustration on smaller screens if it doesn't fit well */
+  }
 }
 
 .create-btn:hover {
   background-color: #38a169;
+}
+
+/* File Panel Styles */
+.file-panel {
+  background-color: #252526;
+  color: #fff;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.file-panel-header {
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #333;
+}
+
+.file-panel-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.new-file-button {
+  padding: 6px 12px;
+  background-color: #0e639c;
+  border: none;
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.new-file-button:hover {
+  background-color: #1177bb;
+}
+
+.new-file-input {
+  padding: 10px;
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #333;
+}
+
+.new-file-input input {
+  flex: 1;
+  padding: 6px;
+  background-color: #3c3c3c;
+  border: 1px solid #555;
+  color: #fff;
+  border-radius: 4px;
+}
+
+.new-file-input select {
+  padding: 6px;
+  background-color: #3c3c3c;
+  border: 1px solid #555;
+  color: #fff;
+  border-radius: 4px;
+}
+
+.new-file-input button {
+  padding: 6px 12px;
+  background-color: #3c3c3c;
+  border: 1px solid #555;
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.new-file-input button:first-of-type {
+  background-color: #0e639c;
+  border-color: #0e639c;
+}
+
+.new-file-input button:first-of-type:hover {
+  background-color: #1177bb;
+}
+
+.new-file-input button:hover {
+  background-color: #4c4c4c;
+}
+
+.persistent-files,
+.file-system {
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.persistent-files h3,
+.file-system h3 {
+  margin: 0 0 10px 0;
+  font-size: 0.9rem;
+  color: #888;
+}
+
+.file-item {
+  padding: 6px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.file-item:hover {
+  background-color: #2a2d2e;
+}
+
+.file-item.active {
+  background-color: #37373d;
+}
+
+.file-owner {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.directory-item {
+  padding: 6px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.directory-item:hover {
+  background-color: #2a2d2e;
+}
+
+.directory-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.file-panel-loading,
+.file-panel-error {
+  padding: 20px;
+  text-align: center;
+  color: #888;
+}
+
+.file-panel-error {
+  color: #f48771;
 }

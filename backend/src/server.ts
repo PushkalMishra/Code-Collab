@@ -6,6 +6,14 @@ import { v4 as uuidv4 } from 'uuid';
 import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import mongoose from 'mongoose';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
+import User from './models/User';
+import fileRoutes from './routes/files'; // Updated import path for files.ts
+
+dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
@@ -14,6 +22,21 @@ const io = new Server(httpServer, {
     origin: "http://localhost:3000",
     methods: ["GET", "POST"]
   }
+});
+
+// MongoDB connection URL from environment variable or default
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/codecollab';
+
+// Connect to MongoDB
+mongoose.connect(MONGODB_URI, {
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+  family: 4
+}).then(() => {
+  console.log('Connected to MongoDB');
+}).catch(err => {
+  console.error('MongoDB connection error:', err);
+  process.exit(1);
 });
 
 // Store active rooms and their users
@@ -32,6 +55,9 @@ const rooms = new Map<string, Room>();
 
 app.use(cors());
 app.use(express.json());
+
+// Integrate file routes
+app.use('/api/files', fileRoutes);
 
 // Create a new room
 app.post('/api/rooms', (req, res) => {
@@ -149,6 +175,36 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Handle file creation
+  socket.on('file-created', (fileData) => {
+    const roomId = Array.from(socket.rooms)[1];
+    if (roomId) {
+      // Broadcast to all users in the room except sender
+      socket.to(roomId).emit('file-created', fileData);
+      console.log(`File created in room ${roomId}:`, fileData);
+    }
+  });
+
+  // Handle file updates
+  socket.on('file-updated', (fileData) => {
+    const roomId = Array.from(socket.rooms)[1];
+    if (roomId) {
+      // Broadcast to all users in the room except sender
+      socket.to(roomId).emit('file-updated', fileData);
+      console.log(`File updated in room ${roomId}:`, fileData);
+    }
+  });
+
+  // Handle file deletion
+  socket.on('file-deleted', (fileId) => {
+    const roomId = Array.from(socket.rooms)[1];
+    if (roomId) {
+      // Broadcast to all users in the room except sender
+      socket.to(roomId).emit('file-deleted', fileId);
+      console.log(`File deleted in room ${roomId}:`, fileId);
+    }
+  });
+
   // Handle code execution
   socket.on('execute-code', ({ code, language, input }) => {
     console.log('Received execute-code request:', { language, hasCode: code.length > 0, hasInput: input.length > 0 });
@@ -226,14 +282,77 @@ io.on('connection', (socket) => {
           error: `Failed to execute code: ${spawnError.message}`
         });
         fs.unlink(tempFileName, (unlinkErr) => {
-          if (unlinkErr) console.error('Error deleting temp file:', unlinkErr);
+          if (unlinkErr) console.error('Error deleting temp file on spawn error:', unlinkErr);
         });
       });
     });
   });
 });
 
+// Register route
+app.post('/api/register', async (req, res) => {
+  try {
+    const { username, email, password, fullName, phoneNumber } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+    if (existingUser) {
+      return res.status(409).json({ message: 'User with that username or email already exists.' });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10); // Salt rounds = 10
+
+    // Create new user
+    const newUser = new User({
+      username,
+      email,
+      password: hashedPassword,
+      fullName,
+      phoneNumber,
+    });
+
+    await newUser.save();
+
+    res.status(201).json({ message: 'User registered successfully.' });
+  } catch (error) {
+    console.error('Error during registration:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+});
+
+// Login route
+app.post('/api/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Check if user exists
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid credentials.' });
+    }
+
+    // Compare password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid credentials.' });
+    }
+
+    // Generate JWT
+    const token = jwt.sign(
+      { userId: user._id, username: user.username, email: user.email },
+      process.env.JWT_SECRET || 'supersecretjwtkey', // Use a strong secret from environment variables
+      { expiresIn: '1h' } // Token expires in 1 hour
+    );
+
+    res.status(200).json({ message: 'Logged in successfully.', token, username: user.username });
+  } catch (error) {
+    console.error('Error during login:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+});
+
 const PORT = process.env.PORT || 3002;
 httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-}); 
+});

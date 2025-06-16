@@ -6,10 +6,9 @@ import { Users } from './Users';
 import './UsersPanel.css';
 
 interface UsersPanelProps {
-    isOpen: boolean;
 }
 
-export const UsersPanel: React.FC<UsersPanelProps> = ({ isOpen }) => {
+export const UsersPanel: React.FC<UsersPanelProps> = () => {
     const navigate = useNavigate();
     const { socket, setStatus, users } = useAppContext();
 
@@ -55,8 +54,6 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({ isOpen }) => {
         navigate('/');
         toast.success('Left the room successfully');
     };
-
-    if (!isOpen) return null;
 
     return (
         <div className="users-panel bg-gray-800 rounded-lg shadow-lg p-4 min-w-[280px] max-w-[320px]">

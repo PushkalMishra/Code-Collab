@@ -1,95 +1,89 @@
 import React from 'react';
 import { FileSystemItem } from '../types/file';
-import { useFileSystem } from '../context/FileContext';
+import { useFile } from '../context/FileContext';
 
 interface FileTreeItemProps {
     item: FileSystemItem;
-    selectedNodeId: string | null;
-    setSelectedNodeId: (id: string) => void;
-    onNewFolder: () => void;
-    onNewFile: () => void;
-    children?: React.ReactNode;
+    level: number;
+    onContextMenu: (event: React.MouseEvent, item: FileSystemItem | null, isDirectory: boolean) => void;
+    onSelectFile: (file: FileSystemItem) => void;
+    onRename: (itemId: string) => void;
+    isRenaming: boolean;
+    renameItemName: string;
+    setRenameItemName: (name: string) => void;
+    handleConfirmRename: () => void;
 }
 
 const FileTreeItem: React.FC<FileTreeItemProps> = ({
     item,
-    selectedNodeId,
-    setSelectedNodeId,
-    onNewFolder,
-    onNewFile,
-    children
+    level,
+    onContextMenu,
+    onSelectFile,
+    onRename,
+    isRenaming,
+    renameItemName,
+    setRenameItemName,
+    handleConfirmRename,
 }) => {
-    const {
-        toggleDirectory,
-        openFile,
-        renameFile,
-        deleteFile,
-        renameDirectory,
-        deleteDirectory
-    } = useFileSystem();
+    const { toggleDirectory, openFile } = useFile();
 
-    const [isRenaming, setIsRenaming] = React.useState(false);
-    const [newName, setNewName] = React.useState(item.name);
-
-    const handleRename = () => {
-        if (newName.trim() && newName !== item.name) {
-            if (item.type === 'file') {
-                renameFile(item.id, newName);
-            } else {
-                renameDirectory(item.id, newName);
-            }
+    const handleDoubleClick = () => {
+        if (item.type === 'directory') {
+            toggleDirectory(item.id);
+        } else {
+            onSelectFile(item);
         }
-        setIsRenaming(false);
     };
 
-    const handleDelete = () => {
-        if (item.type === 'file') {
-            deleteFile(item.id);
-        } else {
-            deleteDirectory(item.id);
-        }
+    const handleRenameClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onRename(item.id);
     };
 
     return (
-        <div className="file-tree-item">
-            <div
-                className={`file-tree-item-content ${selectedNodeId === item.id ? 'selected' : ''}`}
-                onClick={() => {
-                    if (item.type === 'file') {
-                        openFile(item.id);
-                    } else {
-                        toggleDirectory(item.id);
-                    }
-                    setSelectedNodeId(item.id);
-                }}
-            >
-                <span className="file-icon">
-                    {item.type === 'directory' ? '📁' : '📄'}
+        <div
+            className="file-tree-item"
+            onContextMenu={(e) => onContextMenu(e, item, item.type === 'directory')}
+            onDoubleClick={handleDoubleClick}
+            style={{ paddingLeft: `${level * 15}px` }}
+        >
+            {isRenaming ? (
+                <input
+                    type="text"
+                    value={renameItemName}
+                    onChange={(e) => setRenameItemName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleConfirmRename()}
+                    onBlur={handleConfirmRename}
+                    autoFocus
+                />
+            ) : (
+                <span className="item-name">
+                    {item.type === 'directory' ? (
+                        item.isOpen ? '📂' : '📁'
+                    ) : (
+                        '📄'
+                    )}
+                    {item.name}
                 </span>
-                {isRenaming ? (
-                    <input
-                        type="text"
-                        value={newName}
-                        onChange={(e) => setNewName(e.target.value)}
-                        onBlur={handleRename}
-                        onKeyPress={(e) => e.key === 'Enter' && handleRename()}
-                        autoFocus
-                    />
-                ) : (
-                    <span className="file-name">{item.name}</span>
-                )}
-            </div>
-            <div className="file-tree-item-actions">
-                {item.type === 'directory' && (
-                    <>
-                        <button onClick={onNewFolder} title="New Folder">📁</button>
-                        <button onClick={onNewFile} title="New File">📄</button>
-                    </>
-                )}
-                <button onClick={() => setIsRenaming(true)} title="Rename">✏️</button>
-                <button onClick={handleDelete} title="Delete">🗑️</button>
-            </div>
-            {children}
+            )}
+            {item.type === 'directory' && item.isOpen && item.children && (
+                <div className="file-tree-children">
+                    {item.children.map((child) => (
+                        <FileTreeItem
+                            key={child.id}
+                            item={child}
+                            level={level + 1}
+                            onContextMenu={onContextMenu}
+                            onSelectFile={onSelectFile}
+                            onRename={onRename}
+                            isRenaming={isRenaming}
+                            renameItemName={renameItemName}
+                            setRenameItemName={setRenameItemName}
+                            handleConfirmRename={handleConfirmRename}
+                        />
+                    ))}
+                </div>
+            )}
         </div>
     );
 };

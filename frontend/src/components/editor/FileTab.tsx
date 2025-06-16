@@ -1,26 +1,24 @@
 import React from 'react';
-import { useFileSystem } from '../../context/FileContext';
+import { useFile } from '../../context/FileContext';
+import { FileSystemItem } from '../../types/file'; // Import FileSystemItem
 
 const FileTab: React.FC = () => {
-    const { openFiles, activeFile, setActiveFile, closeFile } = useFileSystem();
+    const { openFiles, activeFile, setActiveFile, closeFile } = useFile();
 
     return (
         <div className="file-tabs">
-            {openFiles.map((file) => (
+            {openFiles.map((file: FileSystemItem) => (
                 <div
                     key={file.id}
                     className={`file-tab ${activeFile?.id === file.id ? 'active' : ''}`}
                     onClick={() => setActiveFile(file)}
                 >
-                    <span className="file-name">{file.name}</span>
-                    <button
-                        className="close-button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            closeFile(file.id);
-                        }}
-                    >
-                        ×
+                    <span className="file-tab-name">{file.name}</span>
+                    <button className="close-tab-button" onClick={(e) => {
+                        e.stopPropagation();
+                        closeFile(file.id);
+                    }}>
+                        &times;
                     </button>
                 </div>
             ))}
@@ -28,4 +26,4 @@ const FileTab: React.FC = () => {
     );
 };
 
-export default FileTab; 
+export default FileTab;

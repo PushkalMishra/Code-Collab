@@ -1,6 +1,17 @@
-const mongoose = require('mongoose');
+import mongoose, { Schema, Document } from 'mongoose';
 
-const fileSchema = new mongoose.Schema({
+interface IFile extends Document {
+  name: string;
+  content: string;
+  language: string;
+  owner: mongoose.Schema.Types.ObjectId;
+  roomId: string;
+  sharedWith: mongoose.Schema.Types.ObjectId[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const fileSchema: Schema = new Schema({
   name: {
     type: String,
     required: true
@@ -37,9 +48,11 @@ const fileSchema = new mongoose.Schema({
 });
 
 // Update the updatedAt timestamp before saving
-fileSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
+fileSchema.pre<IFile>('save', function(next) {
+  this.updatedAt = new Date(Date.now());
   next();
 });
 
-module.exports = mongoose.model('File', fileSchema); 
+const File = mongoose.model<IFile>('File', fileSchema);
+
+export default File;

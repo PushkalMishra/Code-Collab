@@ -171,7 +171,7 @@
   flex-direction: column;
   flex: 1;
   overflow: hidden;
-  min-height: 0; /* Ensure it can shrink if necessary */
+  min-height: 0;
 }
 
 .execution-result {
@@ -381,9 +381,14 @@
 .editor-flex-container {
     display: flex;
     flex-direction: column;
-    flex-grow: 1;
-    flex-shrink: 1;
+    flex: 1;
     min-height: 0;
+    height: 100%; /* Ensure it takes full height of its parent */
+}
+
+/* Ensure Monaco Editor container has stable dimensions */
+.editor-flex-container > div {
+  /* No specific styles needed here, let Monaco Editor fill its parent */
 }
 
 /* Styles for the left panel wrapper */

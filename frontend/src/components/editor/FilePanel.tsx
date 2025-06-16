@@ -1,206 +1,137 @@
 import React, { useState } from 'react';
 import FileStructureView from '../FileStructureView';
-import { useFileSystem } from '../../context/FileContext';
+import { useFile } from '../../context/FileContext'; // Corrected import
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'react-hot-toast';
-import { FileSystemItem } from '../../types/file';
+import { FileSystemItem } from '../../types/file'; // Ensure this import is correct
+import { useAuth } from '../../context/AuthContext'; // Added useAuth
 
-interface FilePanelProps {
-    isOpen: boolean;
-}
+const FilePanel: React.FC = () => {
+    const {
+        fileStructure,
+        createDirectory,
+        createFileSystemFile,
+        openFile,
+        updateDirectory,
+        renameDirectory,
+        deleteDirectory,
+        renameFile,
+        deleteFileSystemFile,
+        files, // From MongoDB
+        createPersistentFile, // For MongoDB
+        activeFile // For general use
+    } = useFile();
+    const { isLoggedIn, user } = useAuth();
+    const [showNewFolderInput, setShowNewFolderInput] = useState<string | null>(null);
+    const [newFolderName, setNewFolderName] = useState('');
+    const [showNewFileInput, setShowNewFileInput] = useState<string | null>(null);
+    const [newFileName, setNewFileName] = useState('');
+    const [selectedLanguage, setSelectedLanguage] = useState('javascript');
 
-interface FileSystemFileHandle {
-    kind: 'file';
-    name: string;
-    getFile(): Promise<File>;
-}
-
-interface FileSystemDirectoryHandle {
-    kind: 'directory';
-    name: string;
-    values(): AsyncIterableIterator<FileSystemHandle>;
-}
-
-type FileSystemHandle = FileSystemFileHandle | FileSystemDirectoryHandle;
-
-declare global {
-    interface Window {
-        showDirectoryPicker(): Promise<FileSystemDirectoryHandle>;
-    }
-}
-
-const FilePanel: React.FC<FilePanelProps> = ({ isOpen }) => {
-    const { updateDirectory } = useFileSystem();
-    const [isLoading, setIsLoading] = useState(false);
-
-    const handleOpenDirectory = async () => {
-        try {
-            setIsLoading(true);
-
-            // Check for modern API support
-            if ('showDirectoryPicker' in window) {
-                const directoryHandle = await window.showDirectoryPicker();
-                await processDirectoryHandle(directoryHandle);
-                return;
-            }
-
-            // Fallback for browsers without `showDirectoryPicker`
-            if ('webkitdirectory' in HTMLInputElement.prototype) {
-                const fileInput = document.createElement('input');
-                fileInput.type = 'file';
-                fileInput.webkitdirectory = true;
-
-                fileInput.onchange = async (e) => {
-                    const files = (e.target as HTMLInputElement).files;
-                    if (files) {
-                        const structure = await readFileList(files);
-                        updateDirectory('', structure);
-                    }
-                };
-
-                fileInput.click();
-                return;
-            }
-
-            // Notify if neither API is supported
-            toast.error('Your browser does not support directory selection.');
-        } catch (error) {
-            console.error('Error opening directory:', error);
-            toast.error('Failed to open directory');
-        } finally {
-            setIsLoading(false);
+    const handleCreateFolder = (parentDirId: string | null) => {
+        if (newFolderName.trim()) {
+            // For local file system only (no MongoDB interaction for directories)
+            createDirectory(parentDirId || '', newFolderName);
+            setNewFolderName('');
+            setShowNewFolderInput(null);
+            toast.success('Folder created!');
         }
     };
 
-    const processDirectoryHandle = async (directoryHandle: FileSystemDirectoryHandle) => {
-        try {
-            toast.loading('Getting files and folders...');
-            const structure = await readDirectory(directoryHandle);
-            updateDirectory('', structure);
-            toast.dismiss();
-            toast.success('Directory loaded successfully');
-        } catch (error) {
-            console.error('Error processing directory:', error);
-            toast.error('Failed to process directory');
+    const handleCreateFile = async (parentDirId: string | null) => {
+        if (!newFileName.trim()) return;
+
+        if (isLoggedIn) {
+            // Create persistent file in MongoDB
+            await createPersistentFile(newFileName, '', selectedLanguage);
+            toast.success('File created and saved to MongoDB!');
+        } else {
+            // Create local file system file
+            createFileSystemFile(parentDirId || '', newFileName, '', selectedLanguage);
+            toast.success('Local file created!');
         }
+
+        setNewFileName('');
+        setShowNewFileInput(null);
     };
-
-    const readDirectory = async (directoryHandle: FileSystemDirectoryHandle): Promise<FileSystemItem[]> => {
-        const children: FileSystemItem[] = [];
-        const blackList = ['node_modules', '.git', '.vscode', '.next'];
-
-        for await (const entry of directoryHandle.values()) {
-            if (entry.kind === 'file') {
-                const fileHandle = entry as FileSystemFileHandle;
-                const file = await fileHandle.getFile();
-                const newFile: FileSystemItem = {
-                    id: uuidv4(),
-                    name: entry.name,
-                    type: 'file',
-                    content: await readFileContent(file),
-                };
-                children.push(newFile);
-            } else if (entry.kind === 'directory') {
-                if (blackList.includes(entry.name)) continue;
-
-                const dirHandle = entry as FileSystemDirectoryHandle;
-                const newDirectory: FileSystemItem = {
-                    id: uuidv4(),
-                    name: entry.name,
-                    type: 'directory',
-                    children: await readDirectory(dirHandle),
-                    isOpen: false,
-                };
-                children.push(newDirectory);
-            }
-        }
-        return children;
-    };
-
-    const readFileList = async (files: FileList): Promise<FileSystemItem[]> => {
-        const children: FileSystemItem[] = [];
-        const blackList = ['node_modules', '.git', '.vscode', '.next'];
-
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            const pathParts = file.webkitRelativePath.split('/');
-
-            if (pathParts.some((part) => blackList.includes(part))) continue;
-
-            if (pathParts.length > 1) {
-                const directoryPath = pathParts.slice(0, -1).join('/');
-                const directoryIndex = children.findIndex(
-                    (item) => item.name === directoryPath && item.type === 'directory'
-                );
-
-                if (directoryIndex === -1) {
-                    const newDirectory: FileSystemItem = {
-                        id: uuidv4(),
-                        name: directoryPath,
-                        type: 'directory',
-                        children: [],
-                        isOpen: false,
-                    };
-                    children.push(newDirectory);
-                }
-
-                const newFile: FileSystemItem = {
-                    id: uuidv4(),
-                    name: file.name,
-                    type: 'file',
-                    content: await readFileContent(file),
-                };
-
-                const targetDirectory = children.find(
-                    (item) => item.name === directoryPath && item.type === 'directory'
-                );
-                if (targetDirectory && targetDirectory.type === 'directory' && targetDirectory.children) {
-                    targetDirectory.children.push(newFile);
-                }
-            } else {
-                const newFile: FileSystemItem = {
-                    id: uuidv4(),
-                    name: file.name,
-                    type: 'file',
-                    content: await readFileContent(file),
-                };
-                children.push(newFile);
-            }
-        }
-        return children;
-    };
-
-    const readFileContent = async (file: File): Promise<string> => {
-        const MAX_FILE_SIZE = 1024 * 1024; // 1MB limit
-
-        if (file.size > MAX_FILE_SIZE) {
-            return `File too large: ${file.name} (${Math.round(file.size / 1024)}KB)`;
-        }
-
-        try {
-            return await file.text();
-        } catch (error) {
-            console.error(`Error reading file ${file.name}:`, error);
-            return `Error reading file: ${file.name}`;
-        }
-    };
-
-    if (!isOpen) return null;
 
     return (
         <div className="file-panel">
             <div className="file-panel-header">
-                <button
-                    className="open-directory-button"
-                    onClick={handleOpenDirectory}
-                    disabled={isLoading}
-                >
-                    {isLoading ? 'Loading...' : 'Open File/Folder'}
-                </button>
+                <span>Files</span>
+                <div className="file-actions">
+                    <button onClick={() => setShowNewFolderInput('root')} title="New Folder">
+                        📁 New Folder
+                    </button>
+                    <button onClick={() => setShowNewFileInput('root')} title="New File">
+                        📄 New File
+                    </button>
+                </div>
             </div>
+
+            {showNewFolderInput === 'root' && (
+                <div className="new-item-input">
+                    <input
+                        type="text"
+                        placeholder="New folder name"
+                        value={newFolderName}
+                        onChange={(e) => setNewFolderName(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleCreateFolder(null)}
+                        autoFocus
+                    />
+                    <button onClick={() => handleCreateFolder(null)}>Create</button>
+                    <button onClick={() => setShowNewFolderInput(null)}>Cancel</button>
+                </div>
+            )}
+
+            {showNewFileInput === 'root' && (
+                <div className="new-item-input">
+                    <input
+                        type="text"
+                        placeholder="New file name"
+                        value={newFileName}
+                        onChange={(e) => setNewFileName(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleCreateFile(null)}
+                        autoFocus
+                    />
+                    <select
+                        value={selectedLanguage}
+                        onChange={(e) => setSelectedLanguage(e.target.value)}
+                    >
+                        <option value="javascript">JavaScript</option>
+                        <option value="typescript">TypeScript</option>
+                        <option value="python">Python</option>
+                        <option value="java">Java</option>
+                        <option value="cpp">C++</option>
+                    </select>
+                    <button onClick={() => handleCreateFile(null)}>Create</button>
+                    <button onClick={() => setShowNewFileInput(null)}>Cancel</button>
+                </div>
+            )}
+            {isLoggedIn && files.length > 0 && (
+                <div className="persistent-files-section">
+                    <h3>Your Persistent Files</h3>
+                    {files.map(file => (
+                        <div
+                            key={file._id}
+                            className={`file-item ${activeFile?.id === file._id ? 'active' : ''}`}
+                            onClick={() => openFile({
+                                id: file._id,
+                                name: file.name,
+                                type: 'file',
+                                parentId: null,
+                                content: file.content,
+                                language: file.language,
+                            })}
+                        >
+                            📄 {file.name} {file.owner && `(Owner: ${file.owner.username})`}
+                        </div>
+                    ))}
+                </div>
+            )}
             <FileStructureView />
         </div>
     );
 };
 
-export default FilePanel; 
+export default FilePanel;

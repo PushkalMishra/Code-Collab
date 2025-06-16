@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { PanelType } from '../sidebar/views/types';
 import { LanguageType } from '../../hooks/useLanguage';
-import { useFileSystem } from '../../context/FileContext';
+import { useFile } from '../../context/FileContext';
 import MonacoEditor from '@monaco-editor/react';
 import FileTab from './FileTab';
 import { useSocket } from '../../context/SocketContext';
@@ -30,13 +30,44 @@ const MainContentArea: React.FC<MainContentAreaProps> = ({
     setNewMessage,
     executionResult
 }) => {
-    const { activeFile, updateFileContent } = useFileSystem();
+    const { activeFile, updateFileContent, roomId } = useFile();
+    const { socket } = useSocket();
     const socketService = SocketService.getInstance();
     const [customInput, setCustomInput] = useState<string>('');
+    const editorRef = useRef<any>(null);
+    const resizeTimeoutRef = useRef<NodeJS.Timeout>();
+
+    const handleEditorDidMount = useCallback((editor: any) => {
+        editorRef.current = editor;
+    }, []);
+
+    useEffect(() => {
+        const handleResize = () => {
+            if (resizeTimeoutRef.current) {
+                clearTimeout(resizeTimeoutRef.current);
+            }
+            resizeTimeoutRef.current = setTimeout(() => {
+                if (editorRef.current) {
+                    editorRef.current.layout();
+                }
+            }, 100);
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            if (resizeTimeoutRef.current) {
+                clearTimeout(resizeTimeoutRef.current);
+            }
+        };
+    }, []);
 
     const handleEditorChange = (value: string | undefined) => {
-        if (value !== undefined && activeFile) {
+        if (activeFile && value !== undefined) {
             updateFileContent(activeFile.id, value);
+            if (socket && roomId) {
+                socket.emit('code-change', { roomId, fileId: activeFile.id, code: value });
+            }
         }
     };
 
@@ -45,6 +76,16 @@ const MainContentArea: React.FC<MainContentAreaProps> = ({
             socketService.emitExecuteCode(activeFile.content || '', language, customInput);
         }
     };
+
+    if (!activeFile) {
+        return (
+            <div className="main-content-area">
+                <div className="no-file-selected">
+                    No file selected. Please open a file from the file panel.
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="main-content-area">
@@ -64,25 +105,22 @@ const MainContentArea: React.FC<MainContentAreaProps> = ({
                 </div>
                 <FileTab />
                 <div className="editor-flex-container">
-                    {activeFile ? (
-                        <MonacoEditor
-                            height="100%"
-                            language={language}
-                            value={activeFile.content || ''}
-                            onChange={handleEditorChange}
-                            theme="vs-dark"
-                            options={{
-                                minimap: { enabled: false },
-                                fontSize: 14,
-                                wordWrap: 'on',
-                                automaticLayout: true,
-                            }}
-                        />
-                    ) : (
-                        <div className="no-file-selected">
-                            <p>No file selected. Create or open a file to start coding.</p>
-                        </div>
-                    )}
+                    <MonacoEditor
+                        height="100%"
+                        language={language}
+                        value={activeFile.content || ''}
+                        onChange={handleEditorChange}
+                        onMount={handleEditorDidMount}
+                        theme="vs-dark"
+                        options={{
+                            minimap: { enabled: false },
+                            fontSize: 14,
+                            wordWrap: 'on',
+                            automaticLayout: false,
+                            scrollBeyondLastLine: false,
+                            fixedOverflowWidgets: true,
+                        }}
+                    />
                 </div>
                 <div className="input-output-area">
                     <h3>Custom Input:</h3>

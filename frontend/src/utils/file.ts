@@ -11,6 +11,7 @@ export const initialFileStructure: FileSystemItem = {
     id: 'root',
     name: 'root',
     type: 'directory',
+    parentId: null,
     children: [],
     isOpen: true
 };

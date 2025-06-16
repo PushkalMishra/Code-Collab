@@ -64,15 +64,16 @@ const EditorContent: React.FC = () => {
                     togglePanel={togglePanel}
                 />
                 <div className="left-panel-wrapper">
-                    <FilePanel isOpen={activePanel === 'code' && isPanelOpen} />
-                    <ChatPanel
-                        isOpen={activePanel === 'chat' && isPanelOpen}
-                        chatMessages={chatMessages}
-                        newMessage={newMessage}
-                        setNewMessage={setNewMessage}
-                    />
-                    <UsersPanel isOpen={activePanel === 'users' && isPanelOpen} />
-                    <CopilotPanel isOpen={activePanel === 'copilot' && isPanelOpen} />
+                    {isPanelOpen && activePanel === 'code' && <FilePanel />}
+                    {isPanelOpen && activePanel === 'chat' && (
+                        <ChatPanel
+                            chatMessages={chatMessages}
+                            newMessage={newMessage}
+                            setNewMessage={setNewMessage}
+                        />
+                    )}
+                    {isPanelOpen && activePanel === 'users' && <UsersPanel />}
+                    {isPanelOpen && activePanel === 'copilot' && <CopilotPanel />}
                 </div>
                 <MainContentArea
                     activePanel={activePanel}

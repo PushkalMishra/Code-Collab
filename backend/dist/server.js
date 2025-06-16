@@ -11,6 +11,13 @@ const uuid_1 = require("uuid");
 const child_process_1 = require("child_process");
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
+const mongoose_1 = __importDefault(require("mongoose"));
+const bcrypt_1 = __importDefault(require("bcrypt"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const dotenv_1 = __importDefault(require("dotenv"));
+const User_1 = __importDefault(require("./models/User"));
+const files_1 = __importDefault(require("./routes/files")); // Updated import path for files.ts
+dotenv_1.default.config();
 const app = (0, express_1.default)();
 const httpServer = (0, http_1.createServer)(app);
 const io = new socket_io_1.Server(httpServer, {
@@ -19,9 +26,24 @@ const io = new socket_io_1.Server(httpServer, {
         methods: ["GET", "POST"]
     }
 });
+// MongoDB connection URL from environment variable or default
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/codecollab';
+// Connect to MongoDB
+mongoose_1.default.connect(MONGODB_URI, {
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+    family: 4
+}).then(() => {
+    console.log('Connected to MongoDB');
+}).catch(err => {
+    console.error('MongoDB connection error:', err);
+    process.exit(1);
+});
 const rooms = new Map();
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
+// Integrate file routes
+app.use('/api/files', files_1.default);
 // Create a new room
 app.post('/api/rooms', (req, res) => {
     const roomId = (0, uuid_1.v4)();
@@ -118,6 +140,33 @@ io.on('connection', (socket) => {
             socket.to(roomId).emit('code-change', code, file);
         }
     });
+    // Handle file creation
+    socket.on('file-created', (fileData) => {
+        const roomId = Array.from(socket.rooms)[1];
+        if (roomId) {
+            // Broadcast to all users in the room except sender
+            socket.to(roomId).emit('file-created', fileData);
+            console.log(`File created in room ${roomId}:`, fileData);
+        }
+    });
+    // Handle file updates
+    socket.on('file-updated', (fileData) => {
+        const roomId = Array.from(socket.rooms)[1];
+        if (roomId) {
+            // Broadcast to all users in the room except sender
+            socket.to(roomId).emit('file-updated', fileData);
+            console.log(`File updated in room ${roomId}:`, fileData);
+        }
+    });
+    // Handle file deletion
+    socket.on('file-deleted', (fileId) => {
+        const roomId = Array.from(socket.rooms)[1];
+        if (roomId) {
+            // Broadcast to all users in the room except sender
+            socket.to(roomId).emit('file-deleted', fileId);
+            console.log(`File deleted in room ${roomId}:`, fileId);
+        }
+    });
     // Handle code execution
     socket.on('execute-code', ({ code, language, input }) => {
         console.log('Received execute-code request:', { language, hasCode: code.length > 0, hasInput: input.length > 0 });
@@ -190,11 +239,73 @@ io.on('connection', (socket) => {
                 });
                 fs_1.default.unlink(tempFileName, (unlinkErr) => {
                     if (unlinkErr)
-                        console.error('Error deleting temp file:', unlinkErr);
+                        console.error('Error deleting temp file on spawn error:', unlinkErr);
                 });
             });
         });
     });
+});
+// Register route
+app.post('/api/register', async (req, res) => {
+    try {
+        const { username, email, password, fullName, phoneNumber } = req.body;
+        // Check if user already exists
+        const existingUser = await User_1.default.findOne({ $or: [{ username }, { email }] });
+        if (existingUser) {
+            return res.status(409).json({ message: 'User with that username or email already exists.' });
+        }
+        // Hash password
+        const hashedPassword = await bcrypt_1.default.hash(password, 10); // Salt rounds = 10
+        // Create new user
+        const newUser = new User_1.default({
+            username,
+            email,
+            password: hashedPassword,
+            fullName,
+            phoneNumber,
+        });
+        await newUser.save();
+        res.status(201).json({ message: 'User registered successfully.' });
+    }
+    catch (error) {
+        console.error('Error during registration:', error);
+        res.status(500).json({ message: 'Internal server error.' });
+    }
+});
+// Login route
+app.post('/api/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        // Check if user exists
+        const user = await User_1.default.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid credentials.' });
+        }
+        // Compare password
+        const isMatch = await bcrypt_1.default.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid credentials.' });
+        }
+        // Generate JWT with _id instead of userId
+        const token = jsonwebtoken_1.default.sign({
+            _id: user._id, // Changed from userId to _id
+            username: user.username,
+            email: user.email
+        }, process.env.JWT_SECRET || 'supersecretjwtkey', { expiresIn: '1h' });
+        res.status(200).json({
+            message: 'Logged in successfully.',
+            token,
+            user: {
+                _id: user._id,
+                username: user.username,
+                email: user.email
+            }
+        });
+    }
+    catch (error) {
+        console.error('Error during login:', error);
+        res.status(500).json({ message: 'Internal server error.' });
+    }
 });
 const PORT = process.env.PORT || 3002;
 httpServer.listen(PORT, () => {
