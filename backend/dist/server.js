@@ -286,21 +286,11 @@ app.post('/api/login', async (req, res) => {
         if (!isMatch) {
             return res.status(400).json({ message: 'Invalid credentials.' });
         }
-        // Generate JWT with _id instead of userId
-        const token = jsonwebtoken_1.default.sign({
-            _id: user._id, // Changed from userId to _id
-            username: user.username,
-            email: user.email
-        }, process.env.JWT_SECRET || 'supersecretjwtkey', { expiresIn: '1h' });
-        res.status(200).json({
-            message: 'Logged in successfully.',
-            token,
-            user: {
-                _id: user._id,
-                username: user.username,
-                email: user.email
-            }
-        });
+        // Generate JWT
+        const token = jsonwebtoken_1.default.sign({ userId: user._id, username: user.username, email: user.email }, process.env.JWT_SECRET || 'supersecretjwtkey', // Use a strong secret from environment variables
+        { expiresIn: '1h' } // Token expires in 1 hour
+        );
+        res.status(200).json({ message: 'Logged in successfully.', token, username: user.username });
     }
     catch (error) {
         console.error('Error during login:', error);

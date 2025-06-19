@@ -24,7 +24,7 @@ const LandingPage = () => {
 
       const data = await response.json();
       if (response.ok) {
-        login(data.token, data.username, data.email); // Store token and user data
+        login(data.token, data.username, data.email, data.userId); // Pass userId
         alert(data.message);
       } else {
         alert(data.message || 'Login failed');

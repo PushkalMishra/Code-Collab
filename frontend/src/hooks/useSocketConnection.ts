@@ -27,12 +27,14 @@ export const useSocketConnection = (roomId: string, username: string) => {
             original: user,
             formatted: {
                 socketId: user.id || user.socketId,
-                username: user.username
+                username: user.username,
+                _id: user._id || user.id
             }
         });
         return {
             socketId: user.id || user.socketId,
-            username: user.username
+            username: user.username,
+            _id: user._id || user.id
         };
     };
 

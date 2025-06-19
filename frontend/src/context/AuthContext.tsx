@@ -2,8 +2,8 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 
 interface AuthContextType {
   isLoggedIn: boolean;
-  user: { username: string; email: string } | null;
-  login: (token: string, username: string, email: string) => void;
+  user: { username: string; email: string; userId: string } | null;
+  login: (token: string, username: string, email: string, userId: string) => void;
   logout: () => void;
 }
 
@@ -11,32 +11,35 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-  const [user, setUser] = useState<{ username: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ username: string; email: string; userId: string } | null>(null);
 
   useEffect(() => {
     // Check for token in localStorage on initial load
     const token = localStorage.getItem('token');
     const storedUsername = localStorage.getItem('username');
     const storedEmail = localStorage.getItem('email');
+    const storedUserId = localStorage.getItem('userId');
 
-    if (token && storedUsername && storedEmail) {
+    if (token && storedUsername && storedEmail && storedUserId) {
       setIsLoggedIn(true);
-      setUser({ username: storedUsername, email: storedEmail });
+      setUser({ username: storedUsername, email: storedEmail, userId: storedUserId });
     }
   }, []);
 
-  const login = (token: string, username: string, email: string) => {
+  const login = (token: string, username: string, email: string, userId: string) => {
     localStorage.setItem('token', token);
     localStorage.setItem('username', username);
     localStorage.setItem('email', email);
+    localStorage.setItem('userId', userId);
     setIsLoggedIn(true);
-    setUser({ username, email });
+    setUser({ username, email, userId });
   };
 
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
     localStorage.removeItem('email');
+    localStorage.removeItem('userId');
     setIsLoggedIn(false);
     setUser(null);
   };

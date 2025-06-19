@@ -49,36 +49,30 @@ router.get('/room/:roomId', auth_1.default, async (req, res) => {
     try {
         const currentRoomId = req.params.roomId;
         const currentUserId = req.user?._id;
-        console.log('Backend: Fetching files for RoomId:', currentRoomId, 'and UserId:', currentUserId);
+        console.log('Backend: Fetching files for RoomId:', currentRoomId, 'and UserId:', currentUserId); // ADD THIS LOG
         const files = await File_1.default.find({
             roomId: currentRoomId,
             $or: [
                 { owner: currentUserId },
                 { sharedWith: currentUserId }
             ]
-        })
-            .populate('owner', '_id username email')
-            .populate('sharedWith', '_id username');
-        console.log('Files retrieved for room:', currentRoomId, 'Result count:', files.length, 'Files:', files);
+        }).populate('owner', 'username');
+        console.log('Files retrieved for room:', currentRoomId, 'Result count:', files.length, 'Files:', files); // MODIFIED LOG
         res.json(files);
     }
     catch (error) {
-        console.error('Error fetching files for room:', req.params.roomId, error);
+        console.error('Error fetching files for room:', req.params.roomId, error); // ADD THIS LOG
         res.status(500).json({ message: error.message });
     }
 });
 // Get all files owned by the user
 router.get('/my-files', auth_1.default, async (req, res) => {
     try {
-        console.log('Fetching files for user:', req.user?._id);
         const files = await File_1.default.find({ owner: req.user?._id })
-            .populate('owner', '_id username email')
-            .populate('sharedWith', '_id username');
-        console.log('Files found:', JSON.stringify(files, null, 2));
+            .populate('sharedWith', 'username');
         res.json(files);
     }
     catch (error) {
-        console.error('Error in /my-files:', error);
         res.status(500).json({ message: error.message });
     }
 });
@@ -103,19 +97,16 @@ router.patch('/:fileId', auth_1.default, async (req, res) => {
         if (language !== undefined)
             file.language = language;
         await file.save();
-        // Populate owner and sharedWith before sending response
-        const populatedFile = await File_1.default.findById(file._id)
-            .populate('owner', '_id username email')
-            .populate('sharedWith', '_id username');
-        res.json(populatedFile);
+        res.json(file);
     }
     catch (error) {
         res.status(400).json({ message: error.message });
     }
 });
-// Share file with users
+// Share file with other users
 router.post('/:fileId/share', auth_1.default, async (req, res) => {
     try {
+        const { userIds } = req.body;
         const file = await File_1.default.findOne({
             _id: req.params.fileId,
             owner: req.user?._id
@@ -123,14 +114,10 @@ router.post('/:fileId/share', auth_1.default, async (req, res) => {
         if (!file) {
             return res.status(404).json({ message: 'File not found or access denied' });
         }
-        const { userIds } = req.body;
-        file.sharedWith = userIds;
+        // Add new users to sharedWith array
+        file.sharedWith = [...new Set([...file.sharedWith, ...userIds])];
         await file.save();
-        // Populate owner and sharedWith before sending response
-        const populatedFile = await File_1.default.findById(file._id)
-            .populate('owner', '_id username email')
-            .populate('sharedWith', '_id username');
-        res.json(populatedFile);
+        res.json(file);
     }
     catch (error) {
         res.status(400).json({ message: error.message });
@@ -150,21 +137,6 @@ router.delete('/:fileId', auth_1.default, async (req, res) => {
         res.json({ message: 'File deleted successfully' });
     }
     catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
-// Get all files shared with the user
-router.get('/shared-with-me', auth_1.default, async (req, res) => {
-    try {
-        console.log('Fetching shared files for user:', req.user?._id);
-        const files = await File_1.default.find({ sharedWith: req.user?._id })
-            .populate('owner', '_id username email')
-            .populate('sharedWith', '_id username');
-        console.log('Shared files found:', JSON.stringify(files, null, 2));
-        res.json(files);
-    }
-    catch (error) {
-        console.error('Error in /shared-with-me:', error);
         res.status(500).json({ message: error.message });
     }
 });

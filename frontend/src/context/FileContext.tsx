@@ -84,6 +84,57 @@ const FileProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     language: file.language,
   });
 
+  // Load files when roomId changes or login status changes
+  useEffect(() => {
+    const loadFiles = async () => {
+      const token = getToken();
+      if (!token || !isLoggedIn) {
+        console.warn('loadFiles aborted: Missing token or not logged in');
+        return;
+      }
+      
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Load user's personal files
+        const userFiles = await fileService.getMyFiles(token);
+        console.log('Successfully fetched user files:', userFiles);
+        
+        // Load room files (files created in this room)
+        let roomFiles: FileType[] = [];
+        if (urlRoomId) {
+          roomFiles = await fileService.getRoomFiles(urlRoomId, token);
+          console.log('Successfully fetched room files:', roomFiles);
+        }
+
+        // Combine user's personal files with room files, avoiding duplicates
+        const allFiles = [...userFiles];
+        roomFiles.forEach(roomFile => {
+          if (!allFiles.some(f => f._id === roomFile._id)) {
+            allFiles.push(roomFile);
+          }
+        });
+
+        setFiles(allFiles);
+        
+        if (!currentFile && allFiles.length > 0) {
+          const firstFileAsFSItem = convertToFileSystemItem(allFiles[0]);
+          setCurrentFile(firstFileAsFSItem);
+          setActiveFile(firstFileAsFSItem);
+          setOpenFiles([firstFileAsFSItem]);
+        }
+      } catch (err) {
+        setError('Failed to load files');
+        console.error('Error loading files in FileContext:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadFiles();
+  }, [isLoggedIn, urlRoomId]);
+
   // Set up socket listeners for real-time collaboration
   useEffect(() => {
     if (!socket || !urlRoomId) return;
@@ -96,7 +147,11 @@ const FileProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         if (prevFiles.some(f => f._id === newFile._id)) {
           return prevFiles;
         }
-        return [...prevFiles, newFile];
+        // Only add the file if it's from the current room
+        if (newFile.roomId === urlRoomId) {
+          return [...prevFiles, newFile];
+        }
+        return prevFiles;
       });
     });
 
@@ -138,43 +193,9 @@ const FileProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       socket.off('file-updated');
       socket.off('file-deleted');
     };
-  }, [socket, urlRoomId, activeFile, currentFile]);
+  }, [socket, urlRoomId]);
 
-  // Load persistent files when roomId changes or login status changes
-  useEffect(() => {
-    const loadFiles = async () => {
-      const token = getToken();
-      console.log('FileContext useEffect - loadFiles triggered. RoomId:', urlRoomId, 'isLoggedIn:', isLoggedIn, 'Token present:', !!token);
-      if (!token || !isLoggedIn) {
-        console.warn('loadFiles aborted: Missing token or not logged in. Token present:', !!token, 'isLoggedIn:', isLoggedIn);
-        return;
-      }
-      
-      try {
-        setLoading(true);
-        setError(null);
-        const userFiles = await fileService.getMyFiles(token);
-        console.log('Successfully fetched user files:', userFiles);
-        setFiles(userFiles);
-        
-        if (!currentFile && userFiles.length > 0) {
-          const firstFileAsFSItem = convertToFileSystemItem(userFiles[0]);
-          setCurrentFile(firstFileAsFSItem);
-          setActiveFile(firstFileAsFSItem);
-          setOpenFiles([firstFileAsFSItem]);
-        }
-      } catch (err) {
-        setError('Failed to load files');
-        console.error('Error loading files in FileContext:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadFiles();
-  }, [isLoggedIn, currentFile]);
-
-  // Modify createPersistentFile to emit socket event
+  // Modify createPersistentFile to handle file creation in room
   const createPersistentFile = async (name: string, content: string, language: string) => {
     const token = getToken();
     if (!urlRoomId || !token || !isLoggedIn || !socket) {
@@ -183,8 +204,17 @@ const FileProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     }
 
     try {
+      // Create the file in the room
       const newFile = await fileService.createFile(name, content, language, urlRoomId, token);
-      setFiles(prevFiles => [...prevFiles, newFile]);
+      
+      // Update local state
+      setFiles(prevFiles => {
+        // Check if file already exists
+        if (prevFiles.some(f => f._id === newFile._id)) {
+          return prevFiles;
+        }
+        return [...prevFiles, newFile];
+      });
       
       const newFileAsFSItem = convertToFileSystemItem(newFile);
       setCurrentFile(newFileAsFSItem);
