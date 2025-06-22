@@ -8,6 +8,7 @@ import { useSocket } from '../../context/SocketContext';
 import SocketService from '../../services/socketService';
 import { ChatPanel } from '../editor/ChatPanel';
 import FilePanel from './FilePanel';
+import { detectLanguage } from '../../utils/languageDetect';
 
 interface MainContentAreaProps {
     activePanel: PanelType | null;
@@ -61,6 +62,40 @@ const MainContentArea: React.FC<MainContentAreaProps> = ({
             }
         };
     }, []);
+
+    useEffect(() => {
+        const handler = (e: Event) => {
+            const customEvent = e as CustomEvent;
+            if (customEvent.detail && customEvent.detail.language) {
+                setLanguage(customEvent.detail.language);
+            }
+        };
+        window.addEventListener('file-created', handler);
+        return () => window.removeEventListener('file-created', handler);
+    }, [setLanguage]);
+
+    const mapToLanguageType = (lang: string): LanguageType => {
+        switch (lang) {
+            case 'javascript':
+            case 'typescript':
+            case 'python':
+            case 'cpp':
+            case 'java':
+                return lang;
+            case 'c':
+            case 'h':
+                return 'cpp';
+            default:
+                return 'javascript';
+        }
+    };
+
+    useEffect(() => {
+        if (activeFile && activeFile.name) {
+            const detected = detectLanguage(activeFile.name);
+            setLanguage(mapToLanguageType(detected));
+        }
+    }, [activeFile, setLanguage]);
 
     const handleEditorChange = (value: string | undefined) => {
         if (activeFile && value !== undefined) {

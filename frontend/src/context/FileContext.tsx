@@ -265,26 +265,57 @@ const FileProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // Modify deletePersistentFile to emit socket event
   const deletePersistentFile = async (fileId: string) => {
     const token = getToken();
-    if (!token || !isLoggedIn || !socket) return;
+    if (!token) {
+      console.error('Delete failed: No token found');
+      throw new Error('Authentication token not found');
+    }
+    if (!isLoggedIn) {
+      console.error('Delete failed: User not logged in');
+      throw new Error('User not logged in');
+    }
+    if (!socket) {
+      console.error('Delete failed: No socket connection');
+      throw new Error('No socket connection');
+    }
 
     try {
+      console.log('Attempting to delete file:', fileId);
       await fileService.deleteFile(fileId, token);
-      setFiles(prevFiles => prevFiles.filter(file => file._id !== fileId));
+      console.log('File deleted successfully on backend');
+      
+      setFiles(prevFiles => {
+        const updatedFiles = prevFiles.filter(file => file._id !== fileId);
+        console.log('Updated files state:', updatedFiles);
+        return updatedFiles;
+      });
       
       // Remove from open and active files if deleted
       if (activeFile?.id === fileId) {
+        console.log('Clearing active file');
         setActiveFile(null);
       }
-      setOpenFiles(prevOpenFiles => prevOpenFiles.filter(file => file.id !== fileId));
+      setOpenFiles(prevOpenFiles => {
+        const updatedOpenFiles = prevOpenFiles.filter(file => file.id !== fileId);
+        console.log('Updated open files:', updatedOpenFiles);
+        return updatedOpenFiles;
+      });
       if (currentFile?.id === fileId) {
+        console.log('Clearing current file');
         setCurrentFile(null);
       }
 
       // Emit socket event for other users
+      console.log('Emitting file-deleted event');
       socket.emit('file-deleted', fileId);
+      console.log('File deletion completed successfully');
     } catch (err) {
-      setError('Failed to delete file');
       console.error('Error deleting file:', err);
+      if (err instanceof Error) {
+        console.error('Error details:', err.message);
+        setError(`Failed to delete file: ${err.message}`);
+      } else {
+        setError('Failed to delete file: Unknown error');
+      }
       throw err;
     }
   };

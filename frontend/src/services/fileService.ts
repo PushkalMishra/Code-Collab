@@ -2,6 +2,20 @@ import axios from 'axios';
 
 const API_URL = 'http://localhost:3002/api/files';
 
+// Add a response interceptor
+axios.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response && error.response.status === 401) {
+      // Token expired or invalid, clear user session and reload
+      console.error("Authentication error: Token expired or invalid.");
+      localStorage.removeItem('user'); // Assuming user session is stored here
+      window.location.reload(); // Force a reload to redirect to login
+    }
+    return Promise.reject(error);
+  }
+);
+
 export interface File {
   _id: string;
   name: string;

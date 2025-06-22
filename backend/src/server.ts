@@ -171,7 +171,7 @@ io.on('connection', (socket) => {
   socket.on('code-change', (code: string, file?: string) => {
     const roomId = Array.from(socket.rooms)[1];
     if (roomId) {
-      socket.to(roomId).emit('code-change', code, file);
+      io.to(roomId).emit('code-change', code, file);
     }
   });
 
@@ -179,8 +179,7 @@ io.on('connection', (socket) => {
   socket.on('file-created', (fileData) => {
     const roomId = Array.from(socket.rooms)[1];
     if (roomId) {
-      // Broadcast to all users in the room except sender
-      socket.to(roomId).emit('file-created', fileData);
+      io.to(roomId).emit('file-created', fileData);
       console.log(`File created in room ${roomId}:`, fileData);
     }
   });
@@ -189,8 +188,7 @@ io.on('connection', (socket) => {
   socket.on('file-updated', (fileData) => {
     const roomId = Array.from(socket.rooms)[1];
     if (roomId) {
-      // Broadcast to all users in the room except sender
-      socket.to(roomId).emit('file-updated', fileData);
+      io.to(roomId).emit('file-updated', fileData);
       console.log(`File updated in room ${roomId}:`, fileData);
     }
   });
@@ -199,8 +197,7 @@ io.on('connection', (socket) => {
   socket.on('file-deleted', (fileId) => {
     const roomId = Array.from(socket.rooms)[1];
     if (roomId) {
-      // Broadcast to all users in the room except sender
-      socket.to(roomId).emit('file-deleted', fileId);
+      io.to(roomId).emit('file-deleted', fileId);
       console.log(`File deleted in room ${roomId}:`, fileId);
     }
   });

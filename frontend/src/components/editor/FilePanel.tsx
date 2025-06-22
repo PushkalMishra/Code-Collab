@@ -9,6 +9,7 @@ import { toast } from 'react-hot-toast';
 import { FileSystemItem } from '../../types/file';
 import { File as FileType } from '../../services/fileService';
 import { RemoteUser } from '../../types/user';
+import { detectLanguage } from '../../utils/languageDetect';
 
 const FilePanel: React.FC = () => {
     const {
@@ -24,7 +25,8 @@ const FilePanel: React.FC = () => {
         files,
         createPersistentFile,
         shareFile,
-        activeFile
+        activeFile,
+        deletePersistentFile
     } = useFile();
     const { isLoggedIn, user } = useAuth();
     const { users } = useAppContext();
@@ -46,15 +48,22 @@ const FilePanel: React.FC = () => {
 
     const handleCreateFile = async (parentId: string) => {
         if (newFileName.trim() === '') return;
+        const detectedLanguage = detectLanguage(newFileName);
         if (parentId === 'root') {
             try {
-            await createPersistentFile(newFileName, '', selectedLanguage);
+                await createPersistentFile(newFileName, '', detectedLanguage);
                 toast.success('File created successfully!');
+                if (typeof window !== 'undefined' && window.dispatchEvent) {
+                    window.dispatchEvent(new CustomEvent('file-created', { detail: { language: detectedLanguage } }));
+                }
             } catch (error) {
                 toast.error('Failed to create file.');
             }
         } else {
-            createFileSystemFile(parentId, newFileName, '', selectedLanguage);
+            createFileSystemFile(parentId, newFileName, '', detectedLanguage);
+            if (typeof window !== 'undefined' && window.dispatchEvent) {
+                window.dispatchEvent(new CustomEvent('file-created', { detail: { language: detectedLanguage } }));
+            }
         }
         setNewFileName('');
         setShowNewFileInput(null);
@@ -93,6 +102,15 @@ const FilePanel: React.FC = () => {
                 ? prev.filter(id => id !== socketId)
                 : [...prev, socketId]
         );
+    };
+
+    const handleDeleteFile = async (fileId: string) => {
+        try {
+            await deletePersistentFile(fileId);
+            toast.success('File deleted successfully!');
+        } catch (error) {
+            toast.error('Failed to delete file.');
+        }
     };
 
     const renderShareDialog = (file: FileType) => {
@@ -176,12 +194,6 @@ const FilePanel: React.FC = () => {
                         onChange={(e) => setNewFileName(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleCreateFile(showNewFileInput)}
                     />
-                    <select value={selectedLanguage} onChange={(e) => setSelectedLanguage(e.target.value)}>
-                        <option value="javascript">JavaScript</option>
-                        <option value="python">Python</option>
-                        <option value="html">HTML</option>
-                        <option value="css">CSS</option>
-                    </select>
                     <button onClick={() => handleCreateFile(showNewFileInput)}>Create</button>
                     <button onClick={() => setShowNewFileInput(null)}>Cancel</button>
                 </div>
@@ -192,29 +204,41 @@ const FilePanel: React.FC = () => {
                     <h3>Your Files</h3>
                     {files.map(file => (
                         <div key={file._id} className="file-item-container">
-                        <div
-                            className={`file-item ${activeFile?.id === file._id ? 'active' : ''}`}
+                            <div
+                                className={`file-item ${activeFile?.id === file._id ? 'active' : ''}`}
                                 onClick={() => openFile({
-                                id: file._id,
-                                name: file.name,
-                                type: 'file',
-                                parentId: null,
-                                content: file.content,
-                                language: file.language,
-                            })}
-                        >
-                                <span className="file-name">📄 {file.name}</span>
+                                    id: file._id,
+                                    name: file.name,
+                                    type: 'file',
+                                    parentId: null,
+                                    content: file.content,
+                                    language: file.language,
+                                })}
+                            >
+                                <span className="file-name">{file.name}</span>
                                 {file.owner && file.owner._id === user?.userId && (
-                                    <button
-                                        className="share-button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setShowShareDialog(file._id);
-                                        }}
-                                        title="Share file"
-                                    >
-                                        Share
-                                    </button>
+                                    <>
+                                        <button
+                                            className="share-button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShowShareDialog(file._id);
+                                            }}
+                                            title="Share file"
+                                        >
+                                            Share
+                                        </button>
+                                        <button
+                                            className="delete-button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteFile(file._id);
+                                            }}
+                                            title="Delete file"
+                                        >
+                                            Delete
+                                        </button>
+                                    </>
                                 )}
                                 {file.owner && file.owner._id !== user?.userId && (
                                     <span className="file-owner">(Shared by {file.owner.username})</span>

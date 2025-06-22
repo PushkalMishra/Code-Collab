@@ -1,6 +1,5 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import '../App.css'; // Assuming App.css contains general styles, or create Navbar.css
 import { useAuth } from '../context/AuthContext'; // Import useAuth
 
 interface NavbarProps {
@@ -23,18 +22,34 @@ const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, onLogout }) => {
   };
 
   return (
-    <nav className="navbar">
-      <div className="navbar-brand">CodeCollab</div>
-      <ul className="navbar-links">
-        <li><Link to="/">Course</Link></li>
-        <li><Link to="/home" onClick={handleCategoriesClick}>Create Room</Link></li>
-        <li><Link to="/about-us">About us</Link></li>
-      </ul>
+    <nav className="flex items-center justify-between px-6 py-4 lg:px-12 bg-gray-900">
+      <div className="flex items-center space-x-2">
+        <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+          <span className="text-white font-bold text-lg">C</span>
+        </div>
+        <span className="text-white font-bold text-xl">CodeCollab</span>
+      </div>
+      
+      <div className="hidden md:flex items-center space-x-8">
+        <Link to="/" className="text-gray-300 hover:text-white transition-colors">Course</Link>
+        <Link to="/home" onClick={handleCategoriesClick} className="text-gray-300 hover:text-white transition-colors">Create Room</Link>
+        <Link to="/about-us" className="text-gray-300 hover:text-white transition-colors">About us</Link>
+      </div>
+      
       <div className="navbar-auth">
         {isLoggedIn ? (
-          <button onClick={onLogout} className="get-started-button">Logout</button>
+          <button 
+            onClick={onLogout} 
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-all duration-200 hover:scale-105"
+          >
+            Logout
+          </button>
         ) : (
-          <button className="get-started-button">Get Started</button>
+          <button 
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-all duration-200 hover:scale-105"
+          >
+            Get Started
+          </button>
         )}
       </div>
     </nav>

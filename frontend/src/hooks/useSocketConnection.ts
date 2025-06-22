@@ -54,6 +54,14 @@ export const useSocketConnection = (roomId: string, username: string) => {
                 setIsConnected(true);
             });
 
+            // Handle authentication errors
+            socket.on('auth-error', (error) => {
+                console.error('Socket authentication error:', error);
+                // Assuming token is expired, log out the user
+                localStorage.removeItem('user');
+                window.location.href = '/'; // Redirect to landing page
+            });
+
             socket.on('connect_error', (error) => {
                 console.error('Socket connection error:', {
                     error,

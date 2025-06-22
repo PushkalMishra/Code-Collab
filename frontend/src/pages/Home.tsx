@@ -1,13 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import '../App.css';
 import RoomForm from '../components/RoomForm';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
-
-const generateRoomId = () => {
-  return Math.random().toString(36).substr(2, 9);
-};
 
 const Home: React.FC = () => {
   const [roomId, setRoomId] = useState('');
@@ -40,40 +35,36 @@ const Home: React.FC = () => {
     navigate(`/editor/${roomId}`, { state: { username } });
   };
 
+  const generateRoomId = () => {
+    const newRoomId = Math.random().toString(36).substr(2, 9);
+    setRoomId(newRoomId);
+  };
+
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim()) {
       alert('Please enter a username');
       return;
     }
-    const newRoomId = roomId || generateRoomId();
+    const newRoomId = roomId || Math.random().toString(36).substr(2, 9);
     setRoomId(newRoomId);
     navigate(`/editor/${newRoomId}`, { state: { username } });
   };
 
   return (
-    <div className="landing-page">
+    <div className="bg-gray-900 min-h-screen text-white flex flex-col">
       <Navbar isLoggedIn={isLoggedIn} onLogout={logout} />
-      <div className="landing-content">
-        <div className="room-form-section">
-          <div className="room-card">
-            <div className="home-title">
-              <span className="logo-icon">💻</span>
-              <span className="logo-text">Code <span className="logo-sync">Collab</span></span>
-              <div className="home-subtitle">Code, Chat and Collaborate. It's All in Sync.</div>
-            </div>
-            <RoomForm
-              roomId={roomId}
-              setRoomId={setRoomId}
-              username={username}
-              setUsername={setUsername}
-              handleJoin={handleJoin}
-              handleCreate={handleCreate}
-            />
-          </div>
-        </div>
-        <div className="home-illustration-new">
-          <img src="https://raw.githubusercontent.com/smthari/Switchable-signup-and-login-page/master/Images/person.png" alt="Illustration" style={{ maxWidth: '100%', height: 'auto' }} />
+      <div className="flex-grow flex items-center justify-center">
+        <div className="w-full max-w-md">
+          <RoomForm
+            roomId={roomId}
+            setRoomId={setRoomId}
+            username={username}
+            setUsername={setUsername}
+            handleJoin={handleJoin}
+            handleCreate={handleCreate}
+            generateRoomId={generateRoomId}
+          />
         </div>
       </div>
     </div>
