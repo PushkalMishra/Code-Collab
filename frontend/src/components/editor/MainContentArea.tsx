@@ -1,78 +1,21 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { PanelType } from '../sidebar/views/types';
-import { LanguageType } from '../../hooks/useLanguage';
+import React, { useState, useEffect } from 'react';
 import { useFile } from '../../context/FileContext';
 import MonacoEditor from '@monaco-editor/react';
 import FileTab from './FileTab';
-import { useSocket } from '../../context/SocketContext';
-import SocketService from '../../services/socketService';
-import { ChatPanel } from '../editor/ChatPanel';
-import FilePanel from './FilePanel';
 import { detectLanguage } from '../../utils/languageDetect';
+import { LanguageType } from '../../hooks/useLanguage';
+import SocketService from '../../services/socketService';
 
 interface MainContentAreaProps {
-    activePanel: PanelType | null;
-    isPanelOpen: boolean;
     language: LanguageType;
     setLanguage: (lang: LanguageType) => void;
-    chatMessages: Array<{ username: string; text: string; timestamp: number }>;
-    newMessage: string;
-    setNewMessage: (message: string) => void;
     executionResult: { output: string; error?: string } | null;
 }
 
-const MainContentArea: React.FC<MainContentAreaProps> = ({
-    activePanel,
-    isPanelOpen,
-    language,
-    setLanguage,
-    chatMessages,
-    newMessage,
-    setNewMessage,
-    executionResult
-}) => {
-    const { activeFile, updateFileContent, roomId } = useFile();
-    const { socket } = useSocket();
-    const socketService = SocketService.getInstance();
+const MainContentArea: React.FC<MainContentAreaProps> = ({ language, setLanguage, executionResult }) => {
+    const { activeFile, updateFileContent } = useFile();
     const [customInput, setCustomInput] = useState<string>('');
-    const editorRef = useRef<any>(null);
-    const resizeTimeoutRef = useRef<NodeJS.Timeout>();
-
-    const handleEditorDidMount = useCallback((editor: any) => {
-        editorRef.current = editor;
-    }, []);
-
-    useEffect(() => {
-        const handleResize = () => {
-            if (resizeTimeoutRef.current) {
-                clearTimeout(resizeTimeoutRef.current);
-            }
-            resizeTimeoutRef.current = setTimeout(() => {
-                if (editorRef.current) {
-                    editorRef.current.layout();
-                }
-            }, 100);
-        };
-
-        window.addEventListener('resize', handleResize);
-        return () => {
-            window.removeEventListener('resize', handleResize);
-            if (resizeTimeoutRef.current) {
-                clearTimeout(resizeTimeoutRef.current);
-            }
-        };
-    }, []);
-
-    useEffect(() => {
-        const handler = (e: Event) => {
-            const customEvent = e as CustomEvent;
-            if (customEvent.detail && customEvent.detail.language) {
-                setLanguage(customEvent.detail.language);
-            }
-        };
-        window.addEventListener('file-created', handler);
-        return () => window.removeEventListener('file-created', handler);
-    }, [setLanguage]);
+    const socketService = SocketService.getInstance();
 
     const mapToLanguageType = (lang: string): LanguageType => {
         switch (lang) {
@@ -82,27 +25,21 @@ const MainContentArea: React.FC<MainContentAreaProps> = ({
             case 'cpp':
             case 'java':
                 return lang;
-            case 'c':
-            case 'h':
-                return 'cpp';
             default:
                 return 'javascript';
         }
     };
 
     useEffect(() => {
-        if (activeFile && activeFile.name) {
+        if (activeFile?.name) {
             const detected = detectLanguage(activeFile.name);
             setLanguage(mapToLanguageType(detected));
         }
     }, [activeFile, setLanguage]);
-
+    
     const handleEditorChange = (value: string | undefined) => {
         if (activeFile && value !== undefined) {
             updateFileContent(activeFile.id, value);
-            if (socket && roomId) {
-                socket.emit('code-change', { roomId, fileId: activeFile.id, code: value });
-            }
         }
     };
 
@@ -114,59 +51,73 @@ const MainContentArea: React.FC<MainContentAreaProps> = ({
 
     if (!activeFile) {
         return (
-            <div className="main-content-area">
-                <div className="no-file-selected">
-                    No file selected. Please open a file from the file panel.
-                </div>
+            <div className="flex-1 flex items-center justify-center bg-[#1e1e1e] text-gray-500">
+                Select a file to begin editing.
             </div>
         );
     }
 
     return (
-        <div className="main-content-area">
-            <div className="editor-content">
-                <div className="editor-toolbar">
-                    <select
-                        value={language}
-                        onChange={(e) => setLanguage(e.target.value as LanguageType)}
-                    >
-                        <option value="javascript">JavaScript</option>
-                        <option value="typescript">TypeScript</option>
-                        <option value="python">Python</option>
-                        <option value="cpp">C++</option>
-                        <option value="java">Java</option>
-                    </select>
-                    <button onClick={handleExecuteCode} className="run-button">▶️ Run Code</button>
-                </div>
+        <div className="flex flex-col h-full bg-[#1e1e1e]">
+            {/* Toolbar */}
+            <div className="flex-shrink-0 flex items-center justify-end p-1 bg-[#252526] border-b border-gray-700">
+                 <select
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value as LanguageType)}
+                    className="bg-[#3c3c3c] text-white rounded px-2 py-1 text-xs"
+                >
+                    <option value="javascript">JavaScript</option>
+                    <option value="typescript">TypeScript</option>
+                    <option value="python">Python</option>
+                    <option value="cpp">C++</option>
+                    <option value="java">Java</option>
+                </select>
+                <button 
+                    onClick={handleExecuteCode} 
+                    className="ml-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
+                >
+                    Run Code
+                </button>
+            </div>
+
+            {/* File Tabs */}
+            <div className="flex-shrink-0">
                 <FileTab />
-                <div className="editor-flex-container">
-                    <MonacoEditor
-                        height="100%"
-                        language={language}
-                        value={activeFile.content || ''}
-                        onChange={handleEditorChange}
-                        onMount={handleEditorDidMount}
-                        theme="vs-dark"
-                        options={{
-                            minimap: { enabled: false },
-                            fontSize: 14,
-                            wordWrap: 'on',
-                            automaticLayout: false,
-                            scrollBeyondLastLine: false,
-                            fixedOverflowWidgets: true,
-                        }}
-                    />
-                </div>
-                <div className="input-output-area">
-                    <h3>Custom Input:</h3>
+            </div>
+
+            {/* Editor */}
+            <div className="flex-1 relative overflow-hidden">
+                <MonacoEditor
+                    key={activeFile.id}
+                    path={activeFile.name}
+                    defaultValue={activeFile.content || ''}
+                    language={language}
+                    onChange={handleEditorChange}
+                    theme="vs-dark"
+                    options={{
+                        minimap: { enabled: false },
+                        fontSize: 14,
+                        wordWrap: 'on',
+                        automaticLayout: true,
+                        scrollBeyondLastLine: false,
+                    }}
+                />
+            </div>
+            
+            {/* Input/Output */}
+            <div className="flex flex-col h-64 flex-shrink-0 border-t border-gray-700">
+                <div className="flex-1 p-2 flex flex-col">
+                    <h3 className="text-xs text-gray-400 mb-1 flex-shrink-0">Custom Input:</h3>
                     <textarea
-                        className="custom-input-textarea"
+                        className="w-full flex-1 bg-[#252526] text-white rounded p-2 text-sm resize-none focus:outline-none"
                         value={customInput}
                         onChange={(e) => setCustomInput(e.target.value)}
-                        placeholder="Enter custom input here (e.g., for input() calls in Python)"
+                        placeholder="Enter custom input..."
                     />
-                    <h3>Execution Result:</h3>
-                    <pre className={`execution-result-pre ${executionResult?.error ? 'error' : ''}`}>
+                </div>
+                <div className="flex-1 p-2 border-t border-gray-700 flex flex-col">
+                    <h3 className="text-xs text-gray-400 mb-1 flex-shrink-0">Execution Result:</h3>
+                    <pre className={`w-full flex-1 bg-[#252526] text-white rounded p-2 text-sm overflow-auto ${executionResult?.error ? 'text-red-400' : ''}`}>
                         {executionResult?.error || executionResult?.output || 'No output yet.'}
                     </pre>
                 </div>

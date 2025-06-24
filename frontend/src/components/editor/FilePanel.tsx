@@ -1,255 +1,141 @@
 import React, { useState } from 'react';
-import FileStructureView from '../FileStructureView';
 import { useFile } from '../../context/FileContext';
 import { useAuth } from '../../context/AuthContext';
-import { useAppContext } from '../../context/AppContext';
-import { useSocket } from '../../context/SocketContext';
-import { v4 as uuidv4 } from 'uuid';
-import { toast } from 'react-hot-toast';
+import { DocumentPlusIcon, FolderPlusIcon, ArrowDownTrayIcon, FolderOpenIcon, FolderIcon } from '@heroicons/react/24/outline';
+import { File as PersistentFile } from '../../services/fileService';
 import { FileSystemItem } from '../../types/file';
-import { File as FileType } from '../../services/fileService';
-import { RemoteUser } from '../../types/user';
-import { detectLanguage } from '../../utils/languageDetect';
+import { getLanguageIcon } from '../../utils/language-icons';
+
+const FileItemDisplay: React.FC<{ item: FileSystemItem, onOpenFile: (file: FileSystemItem) => void }> = ({ item, onOpenFile }) => {
+    if (item.type === 'directory') {
+        return (
+            <div className="flex items-center px-4 py-1.5 cursor-pointer text-sm">
+                <FolderIcon className="h-4 w-4 mr-2 text-gray-400" />
+                <span>{item.name}</span>
+            </div>
+        );
+    }
+
+    const { abbr, color } = getLanguageIcon(item.name);
+    return (
+        <div
+            className={`flex items-center px-4 py-1.5 cursor-pointer text-sm hover:bg-gray-700`}
+            onClick={() => onOpenFile(item)}
+        >
+            <span className={`${color} mr-2 font-mono text-xs`}>{abbr}</span>
+            <span>{item.name}</span>
+        </div>
+    );
+};
 
 const FilePanel: React.FC = () => {
     const {
-        fileStructure,
-        createDirectory,
-        createFileSystemFile,
-        openFile,
-        updateDirectory,
-        renameDirectory,
-        deleteDirectory,
-        renameFile,
-        deleteFileSystemFile,
         files,
+        fileStructure,
+        openFile,
         createPersistentFile,
-        shareFile,
         activeFile,
-        deletePersistentFile
+        createDirectory,
+        downloadFilesAndFolders,
     } = useFile();
-    const { isLoggedIn, user } = useAuth();
-    const { users } = useAppContext();
-    const { socket } = useSocket();
-    const [showNewFolderInput, setShowNewFolderInput] = useState<string | null>(null);
-    const [newFolderName, setNewFolderName] = useState('');
-    const [showNewFileInput, setShowNewFileInput] = useState<string | null>(null);
+    const { isLoggedIn } = useAuth();
     const [newFileName, setNewFileName] = useState('');
-    const [selectedLanguage, setSelectedLanguage] = useState('javascript');
-    const [showShareDialog, setShowShareDialog] = useState<string | null>(null);
-    const [selectedUsers, setSelectedUsers] = useState<string[]>([]); // This will store socketIds for checkboxes
+    const [isCreatingFile, setIsCreatingFile] = useState(false);
+    const [newFolderName, setNewFolderName] = useState('');
+    const [isCreatingFolder, setIsCreatingFolder] = useState(false);
 
-    const handleCreateFolder = (parentId: string) => {
-        if (newFolderName.trim() === '') return;
-        createDirectory(parentId, newFolderName);
-            setNewFolderName('');
-            setShowNewFolderInput(null);
-    };
-
-    const handleCreateFile = async (parentId: string) => {
+    const handleCreateFile = async () => {
         if (newFileName.trim() === '') return;
-        const detectedLanguage = detectLanguage(newFileName);
-        if (parentId === 'root') {
-            try {
-                await createPersistentFile(newFileName, '', detectedLanguage);
-                toast.success('File created successfully!');
-                if (typeof window !== 'undefined' && window.dispatchEvent) {
-                    window.dispatchEvent(new CustomEvent('file-created', { detail: { language: detectedLanguage } }));
-                }
-            } catch (error) {
-                toast.error('Failed to create file.');
-            }
-        } else {
-            createFileSystemFile(parentId, newFileName, '', detectedLanguage);
-            if (typeof window !== 'undefined' && window.dispatchEvent) {
-                window.dispatchEvent(new CustomEvent('file-created', { detail: { language: detectedLanguage } }));
-            }
-        }
-        setNewFileName('');
-        setShowNewFileInput(null);
-    };
-
-    const handleShareFile = async (fileId: string) => {
-        if (selectedUsers.length === 0) {
-            toast.error('Please select at least one user to share with');
-            return;
-        }
-
         try {
-            // Map selected socketIds back to user _ids for the backend API
-            const userIdsToShare = users
-                .filter(u => selectedUsers.includes(u.socketId) && u._id)
-                .map(u => u._id as string);
-
-            if (userIdsToShare.length === 0) {
-                toast.error('No valid users selected to share with.');
-                return;
-            }
-            
-            await shareFile(fileId, userIdsToShare);
-            toast.success('File shared successfully!');
-            setShowShareDialog(null);
-            setSelectedUsers([]);
+            await createPersistentFile(newFileName, '', 'javascript');
+            setNewFileName('');
+            setIsCreatingFile(false);
         } catch (error) {
-            toast.error('Failed to share file');
-            console.error('Error sharing file:', error);
+            console.error('Failed to create file:', error);
         }
     };
 
-    const toggleUserSelection = (socketId: string) => {
-        setSelectedUsers(prev => 
-            prev.includes(socketId)
-                ? prev.filter(id => id !== socketId)
-                : [...prev, socketId]
-        );
+    const handleCreateFolder = () => {
+        if (newFolderName.trim() === '') return;
+        createDirectory('root', newFolderName);
+        setNewFolderName('');
+        setIsCreatingFolder(false);
     };
 
-    const handleDeleteFile = async (fileId: string) => {
-        try {
-            await deletePersistentFile(fileId);
-            toast.success('File deleted successfully!');
-        } catch (error) {
-            toast.error('Failed to delete file.');
-        }
+    const handleOpenFile = (file: FileSystemItem) => {
+        openFile(file);
     };
 
-    const renderShareDialog = (file: FileType) => {
-        if (showShareDialog !== file._id) return null;
-
-        const currentUserSocketId = socket?.id;
-        if (!currentUserSocketId) {
-            toast.error('Not connected to room');
-            return null;
-        }
-
-        // Filter out the current user and users who already have access to the file
-        // Ensure `roomUser._id` exists for comparison against `file.sharedWith`
-        const roomUsers = users.filter(roomUser => 
-            roomUser.socketId !== currentUserSocketId && 
-            roomUser._id && // Ensure the remote user has a MongoDB _id
-            !file.sharedWith.some(sharedUser => sharedUser._id === roomUser._id)
-        );
-
-        return (
-            <div className="share-dialog">
-                <div className="share-dialog-content">
-                    <h4>Share "{file.name}" with:</h4>
-                    <div className="user-list">
-                        {roomUsers.map(roomUser => (
-                            <label key={roomUser.socketId} className="user-option">
-                                <input
-                                    type="checkbox"
-                                    checked={selectedUsers.includes(roomUser.socketId)}
-                                    onChange={() => toggleUserSelection(roomUser.socketId)}
-                                />
-                                {roomUser.username}
-                            </label>
-                        ))}
-                    </div>
-                    <div className="share-dialog-actions">
-                        <button onClick={() => handleShareFile(file._id)}>Share</button>
-                        <button onClick={() => {
-                            setShowShareDialog(null);
-                            setSelectedUsers([]);
-                        }}>Cancel</button>
-                    </div>
-                </div>
-            </div>
-        );
-    };
+    const combinedFileStructure = [
+        ...fileStructure,
+        ...files
+            .filter(f => !fileStructure.some(fs => fs.id === f._id))
+            .map(f => ({
+                id: f._id,
+                name: f.name,
+                type: 'file',
+                parentId: 'root',
+                content: f.content,
+                language: f.language || 'javascript',
+            }) as FileSystemItem),
+    ];
 
     return (
-        <div className="file-panel">
-            <div className="file-panel-header">
-                <span>Files</span>
-                <div className="file-actions">
-                    <button onClick={() => setShowNewFolderInput('root')} title="New Folder">
-                        📁 New Folder
+        <div className="flex flex-col h-full bg-[#1e1e1e] text-gray-300">
+            <div className="flex items-center justify-between p-2 border-b border-gray-700">
+                <h2 className="text-sm font-medium px-2">Files</h2>
+                <div className="flex items-center space-x-1">
+                    <button onClick={() => setIsCreatingFile(!isCreatingFile)} className="p-1 hover:bg-gray-700 rounded" title="New File">
+                        <DocumentPlusIcon className="h-4 w-4" />
                     </button>
-                    <button onClick={() => setShowNewFileInput('root')} title="New File">
-                        📄 New File
+                    <button onClick={() => setIsCreatingFolder(!isCreatingFolder)} className="p-1 hover:bg-gray-700 rounded" title="New Folder">
+                        <FolderPlusIcon className="h-4 w-4" />
                     </button>
                 </div>
             </div>
 
-            {showNewFolderInput && (
-                <div className="new-item-input-container">
-                    <input
-                        type="text"
-                        placeholder="Folder name"
-                        value={newFolderName}
-                        onChange={(e) => setNewFolderName(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleCreateFolder(showNewFolderInput)}
-                    />
-                    <button onClick={() => handleCreateFolder(showNewFolderInput)}>Create</button>
-                    <button onClick={() => setShowNewFolderInput(null)}>Cancel</button>
-                </div>
-            )}
-            {showNewFileInput && (
-                <div className="new-item-input-container">
-                    <input
-                        type="text"
-                        placeholder="File name"
-                        value={newFileName}
-                        onChange={(e) => setNewFileName(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleCreateFile(showNewFileInput)}
-                    />
-                    <button onClick={() => handleCreateFile(showNewFileInput)}>Create</button>
-                    <button onClick={() => setShowNewFileInput(null)}>Cancel</button>
-                </div>
-            )}
+            <div className="flex-1 overflow-y-auto">
+                {isCreatingFile && (
+                    <div className="p-2">
+                        <input
+                            type="text"
+                            placeholder="Enter file name..."
+                            value={newFileName}
+                            onChange={(e) => setNewFileName(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleCreateFile()}
+                            className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            autoFocus
+                        />
+                    </div>
+                )}
+                {isCreatingFolder && (
+                    <div className="p-2">
+                        <input
+                            type="text"
+                            placeholder="Enter folder name..."
+                            value={newFolderName}
+                            onChange={(e) => setNewFolderName(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleCreateFolder()}
+                            className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            autoFocus
+                        />
+                    </div>
+                )}
+                {isLoggedIn && combinedFileStructure.map((item) => (
+                    <FileItemDisplay key={item.id} item={item} onOpenFile={handleOpenFile} />
+                ))}
+            </div>
 
-            {isLoggedIn && files.length > 0 && (
-                <div className="persistent-files-section">
-                    <h3>Your Files</h3>
-                    {files.map(file => (
-                        <div key={file._id} className="file-item-container">
-                            <div
-                                className={`file-item ${activeFile?.id === file._id ? 'active' : ''}`}
-                                onClick={() => openFile({
-                                    id: file._id,
-                                    name: file.name,
-                                    type: 'file',
-                                    parentId: null,
-                                    content: file.content,
-                                    language: file.language,
-                                })}
-                            >
-                                <span className="file-name">{file.name}</span>
-                                {file.owner && file.owner._id === user?.userId && (
-                                    <>
-                                        <button
-                                            className="share-button"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setShowShareDialog(file._id);
-                                            }}
-                                            title="Share file"
-                                        >
-                                            Share
-                                        </button>
-                                        <button
-                                            className="delete-button"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDeleteFile(file._id);
-                                            }}
-                                            title="Delete file"
-                                        >
-                                            Delete
-                                        </button>
-                                    </>
-                                )}
-                                {file.owner && file.owner._id !== user?.userId && (
-                                    <span className="file-owner">(Shared by {file.owner.username})</span>
-                                )}
-                            </div>
-                            {renderShareDialog(file)}
-                        </div>
-                    ))}
-                </div>
-            )}
-            <FileStructureView />
+            <div className="p-2 border-t border-gray-700">
+                <button className="flex items-center w-full text-left px-2 py-1.5 text-xs hover:bg-gray-700 rounded">
+                    <FolderOpenIcon className="h-4 w-4 mr-2" />
+                    Open File/Folder
+                </button>
+                <button onClick={downloadFilesAndFolders} className="flex items-center w-full text-left px-2 py-1.5 text-xs hover:bg-gray-700 rounded mt-1">
+                    <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
+                    Download Code
+                </button>
+            </div>
         </div>
     );
 };

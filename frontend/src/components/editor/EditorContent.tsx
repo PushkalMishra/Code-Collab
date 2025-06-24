@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import '../../pages/Editor.css';
-import MainContentArea from './MainContentArea';
-import FilePanel from './FilePanel';
 import Sidebar from '../sidebar/Sidebar';
+import FilePanel from './FilePanel';
 import { ChatPanel } from './ChatPanel';
 import { UsersPanel } from './UsersPanel';
 import { CopilotPanel } from './CopilotPanel';
+import MainContentArea from './MainContentArea';
 import { useSocketConnection } from '../../hooks/useSocketConnection';
 import { usePanelManagement } from '../../hooks/usePanelManagement';
 import { useLanguage } from '../../hooks/useLanguage';
@@ -19,7 +19,6 @@ const EditorContent: React.FC = () => {
     const username = location.state?.username || 'Anonymous';
     console.log('EditorPage: Username from location state:', username);
     const [newMessage, setNewMessage] = useState('');
-    const editorContainerRef = useRef<HTMLDivElement>(null);
 
     // Custom hooks
     const { activePanel, isPanelOpen, switchPanel, togglePanel } = usePanelManagement();
@@ -28,61 +27,51 @@ const EditorContent: React.FC = () => {
 
     const { socket } = useAppContext();
 
-    useEffect(() => {
-        if (!isConnected) {
-            toast.error('Disconnected from server. Please refresh the page.');
-        }
-    }, [isConnected]);
-
-    useEffect(() => {
-        if (editorContainerRef.current) {
-            // Grid template columns: sidebar, left panel, main content
-            editorContainerRef.current.style.gridTemplateColumns = `auto ${isPanelOpen ? '250px' : '0px'} 1fr`;
-        }
-    }, [isPanelOpen]);
+    if (!isConnected) {
+        toast.error('Disconnected from server. Please refresh the page.');
+    }
 
     if (!roomId) {
         return <div>Invalid room ID</div>;
     }
 
-    if (!socket || !isConnected) {
-        return (
-            <div className="loading-container">
-                <div className="loading-spinner"></div>
-                <p>Connecting to server...</p>
-            </div>
-        );
-    }
+    const renderPanel = () => {
+        if (!isPanelOpen) return null;
+        switch (activePanel) {
+            case 'code':
+                return <FilePanel />;
+            case 'chat':
+                return <ChatPanel chatMessages={chatMessages} newMessage={newMessage} setNewMessage={setNewMessage} />;
+            case 'users':
+                return <UsersPanel />;
+            case 'copilot':
+                return <CopilotPanel />;
+            default:
+                return null;
+        }
+    };
 
     return (
-        <div className="editor-page">
-            <div className="editor-container" ref={editorContainerRef}>
-                <Sidebar 
-                    activePanel={activePanel}
-                    switchPanel={switchPanel}
-                    isPanelOpen={isPanelOpen}
-                    togglePanel={togglePanel}
-                />
-                <div className="left-panel-wrapper">
-                    {isPanelOpen && activePanel === 'code' && <FilePanel />}
-                    {isPanelOpen && activePanel === 'chat' && (
-                        <ChatPanel
-                            chatMessages={chatMessages}
-                            newMessage={newMessage}
-                            setNewMessage={setNewMessage}
-                        />
-                    )}
-                    {isPanelOpen && activePanel === 'users' && <UsersPanel />}
-                    {isPanelOpen && activePanel === 'copilot' && <CopilotPanel />}
-                </div>
+        <div className="flex h-screen bg-[#1e1e1e] text-white">
+            <Sidebar 
+                activePanel={activePanel}
+                switchPanel={switchPanel}
+                isPanelOpen={isPanelOpen}
+                togglePanel={togglePanel}
+            />
+            
+            {/* Collapsible Main Panel */}
+            <div 
+                className={`flex-shrink-0 bg-[#252526] transition-all duration-300 ease-in-out border-r border-transparent ${isPanelOpen ? 'w-72 border-gray-700' : 'w-0'}`}
+            >
+                {renderPanel()}
+            </div>
+
+            {/* Main Content Area */}
+            <div className="flex-1 flex flex-col overflow-hidden">
                 <MainContentArea
-                    activePanel={activePanel}
-                    isPanelOpen={isPanelOpen}
                     language={language}
                     setLanguage={changeLanguage}
-                    chatMessages={chatMessages}
-                    newMessage={newMessage}
-                    setNewMessage={setNewMessage}
                     executionResult={executionResult}
                 />
             </div>

@@ -8,15 +8,13 @@ const http_1 = require("http");
 const socket_io_1 = require("socket.io");
 const cors_1 = __importDefault(require("cors"));
 const uuid_1 = require("uuid");
-const child_process_1 = require("child_process");
-const fs_1 = __importDefault(require("fs"));
-const path_1 = __importDefault(require("path"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const User_1 = __importDefault(require("./models/User"));
 const files_1 = __importDefault(require("./routes/files")); // Updated import path for files.ts
+const axios_1 = __importDefault(require("axios"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const httpServer = (0, http_1.createServer)(app);
@@ -66,6 +64,25 @@ app.get('/api/rooms/:roomId', (req, res) => {
         users: Array.from(room.users.values())
     });
 });
+// Add this helper function above io.on('connection')
+function getExtensionForLanguage(language) {
+    switch (language) {
+        case "python3": return "py";
+        case "javascript": return "js";
+        case "typescript": return "ts";
+        case "cpp": return "cpp";
+        case "java": return "java";
+        default: return "txt";
+    }
+}
+// Add this version map above io.on('connection')
+const versionMap = {
+    python3: "3.10.0",
+    javascript: "15.10.0",
+    typescript: "4.2.3",
+    cpp: "10.2.0",
+    java: "15.0.2",
+};
 io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);
     socket.on('join-room', ({ roomId, username }) => {
@@ -165,81 +182,42 @@ io.on('connection', (socket) => {
         }
     });
     // Handle code execution
-    socket.on('execute-code', ({ code, language, input }) => {
-        console.log('Received execute-code request:', { language, hasCode: code.length > 0, hasInput: input.length > 0 });
-        const tempFileName = path_1.default.join(__dirname, `${(0, uuid_1.v4)()}.${language === 'python' ? 'py' : 'txt'}`);
-        console.log(`Attempting to execute ${language} code. Saving to ${tempFileName}`);
-        fs_1.default.writeFile(tempFileName, code, (err) => {
-            if (err) {
-                console.error('Failed to write temporary file:', err);
-                socket.emit('execution-result', {
-                    output: '',
-                    error: `Failed to write code to temporary file: ${err.message}`
-                });
-                return;
-            }
-            let command = '';
-            switch (language) {
-                case 'python':
-                    command = 'python';
-                    break;
-                // Add other languages here
-                default:
-                    socket.emit('execution-result', {
-                        output: '',
-                        error: `Unsupported language: ${language}`
-                    });
-                    fs_1.default.unlink(tempFileName, (unlinkErr) => {
-                        if (unlinkErr)
-                            console.error('Error deleting temp file:', unlinkErr);
-                    });
-                    return;
-            }
-            const child = (0, child_process_1.spawn)(command, [tempFileName]);
-            let output = '';
-            let error = '';
-            // Write custom input to the child process's stdin
-            if (input) {
-                console.log('Writing input to stdin:', input);
-                child.stdin.write(input);
-                child.stdin.end(); // End the stdin stream after writing input
-            }
-            else {
-                console.log('No input provided for stdin.');
-                child.stdin.end(); // Always end stdin if no input or after input
-            }
-            child.stdout.on('data', (data) => {
-                output += data.toString();
-                console.log('stdout data received:', data.toString().trim());
+    socket.on('execute-code', async ({ code, language, input }) => {
+        try {
+            // Map frontend language to Piston API language
+            const languageMap = {
+                python: 'python3',
+                javascript: 'javascript',
+                typescript: 'typescript',
+                cpp: 'cpp',
+                java: 'java',
+            };
+            const pistonLanguage = languageMap[language] || language;
+            const pistonVersion = versionMap[pistonLanguage] || "latest";
+            const payload = {
+                language: pistonLanguage,
+                version: pistonVersion,
+                files: [
+                    {
+                        name: `Main.${getExtensionForLanguage(pistonLanguage)}`,
+                        content: code,
+                    },
+                ],
+                stdin: input || '',
+            };
+            const response = await axios_1.default.post('https://emkc.org/api/v2/piston/execute', payload);
+            const run = response.data.run;
+            socket.emit('execution-result', {
+                output: run.stdout,
+                error: run.stderr || (run.code !== 0 ? `Process exited with code ${run.code}` : ''),
             });
-            child.stderr.on('data', (data) => {
-                error += data.toString();
-                console.error('stderr data received:', data.toString().trim());
+        }
+        catch (e) {
+            socket.emit('execution-result', {
+                output: '',
+                error: e?.response?.data?.message || e.message || 'Execution failed',
             });
-            child.on('close', (code) => {
-                console.log(`Execution finished with code ${code}. Output: ${output}. Error: ${error}`);
-                socket.emit('execution-result', {
-                    output,
-                    error: error || (code !== 0 ? `Process exited with code ${code}` : null)
-                });
-                // Clean up the temporary file
-                fs_1.default.unlink(tempFileName, (unlinkErr) => {
-                    if (unlinkErr)
-                        console.error('Error deleting temporary file:', unlinkErr);
-                });
-            });
-            child.on('error', (spawnError) => {
-                console.error(`Failed to start subprocess: ${spawnError.message}`);
-                socket.emit('execution-result', {
-                    output: '',
-                    error: `Failed to execute code: ${spawnError.message}`
-                });
-                fs_1.default.unlink(tempFileName, (unlinkErr) => {
-                    if (unlinkErr)
-                        console.error('Error deleting temp file on spawn error:', unlinkErr);
-                });
-            });
-        });
+        }
     });
 });
 // Register route

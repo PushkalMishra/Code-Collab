@@ -137,6 +137,19 @@ class SocketService {
     this.socket?.emit('execute-code', { code, language, input });
   }
 
+  // Copilot functionality
+  emitCopilotPrompt(prompt: string) {
+    this.socket?.emit('copilot-prompt', prompt);
+  }
+
+  onCopilotResponse(callback: (response: string) => void) {
+    this.socket?.on('copilot-response', callback);
+  }
+
+  onCopilotError(callback: (error: string) => void) {
+    this.socket?.on('copilot-error', callback);
+  }
+
   // User list synchronization
   onUsersUpdate(callback: (users: RemoteUser[]) => void) {
     this.socket?.on('users-update', callback);

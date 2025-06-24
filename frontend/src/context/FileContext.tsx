@@ -4,6 +4,8 @@ import { useAuth } from './AuthContext';
 import { useSocket } from './SocketContext';
 import { useAppContext } from './AppContext';
 import { fileService, File as FileType } from '../services/fileService';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 // Types for the file system
 interface FileSystemItem {
@@ -514,16 +516,40 @@ const FileProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   };
 
   const downloadFilesAndFolders = () => {
-    const data = JSON.stringify(fileStructure, null, 2);
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'file-structure.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const zip = new JSZip();
+
+    const addFilesToZip = (items: FileSystemItem[], path: string) => {
+        items.forEach(item => {
+            const currentPath = path ? `${path}/${item.name}` : item.name;
+            if (item.type === 'directory') {
+                if (item.children) {
+                    addFilesToZip(item.children, currentPath);
+                }
+            } else {
+                zip.file(currentPath, item.content || '');
+            }
+        });
+    };
+
+    const allItems = [...fileStructure];
+    files.forEach(dbFile => {
+        if (!fileStructure.some(item => item.id === dbFile._id)) {
+            allItems.push({
+                id: dbFile._id,
+                name: dbFile.name,
+                type: 'file',
+                parentId: 'root',
+                content: dbFile.content,
+                language: dbFile.language,
+            });
+        }
+    });
+
+    addFilesToZip(allItems, '');
+
+    zip.generateAsync({ type: 'blob' }).then(content => {
+        saveAs(content, 'codecollab-project.zip');
+    });
   };
 
   const value: FileContextType = {

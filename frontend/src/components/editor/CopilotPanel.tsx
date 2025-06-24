@@ -1,169 +1,95 @@
-import React, { useState } from 'react';
-import { useFile } from '../../context/FileContext';
-import { useLanguage } from '../../hooks/useLanguage';
-import './CopilotPanel.css';
+import React, { useState, useEffect } from 'react';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { ClipboardIcon } from '@heroicons/react/24/outline';
+import { toast } from 'react-hot-toast';
+import SocketService from '../../services/socketService';
+import { useTypingEffect } from '../../hooks/useTypingEffect';
 
-interface CopilotPanelProps {
-}
+export const CopilotPanel: React.FC = () => {
+    const [prompt, setPrompt] = useState<string>('');
+    const [generatedCode, setGeneratedCode] = useState<string>('');
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const socketService = SocketService.getInstance();
+    
+    const displayedCode = useTypingEffect(generatedCode, 10);
 
-export const CopilotPanel: React.FC<CopilotPanelProps> = () => {
-    const { activeFile } = useFile();
-    const { getLanguageFromExtension } = useLanguage();
-    const [customInput, setCustomInput] = useState<string>('');
-    const [executionResult, setExecutionResult] = useState<{ output: string; error?: string } | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    useEffect(() => {
+        const handleCopilotResponse = (code: string) => {
+            setIsLoading(false);
+            setGeneratedCode(code);
+        };
 
-    const handleExecuteCode = () => {
-        if (activeFile) {
-            // TODO: Implement actual code execution through socket
-            setExecutionResult({
-                output: `Executing ${activeFile.name} in ${getLanguageFromExtension(activeFile.name)}...\nThis is a placeholder for actual code execution.`
-            });
-        }
-    };
+        const handleCopilotError = (error: string) => {
+            setIsLoading(false);
+            toast.error(`AI Error: ${error}`);
+        };
 
-    const handleGenerateCode = async () => {
-        if (!customInput.trim()) return;
+        socketService.onCopilotResponse(handleCopilotResponse);
+        socketService.onCopilotError(handleCopilotError);
 
-        setLoading(true);
-        setError(null);
-        setExecutionResult(null);
+        return () => {
+            // No standard off method in socketService, assuming cleanup is handled elsewhere
+        };
+    }, [socketService]);
 
-        try {
-            const language = activeFile ? getLanguageFromExtension(activeFile.name) : 'javascript';
-            const prompt = `Generate ${language} code for the following request: ${customInput}\n\n${activeFile?.content || ''}`;
-
-            const res = await fetch('http://localhost:3002/api/copilot/generate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ prompt }),
-            });
-
-            const data = await res.json();
-            if (res.ok) {
-                setExecutionResult({ output: data.generatedCode });
-            } else {
-                setError(data.message || 'Failed to generate code');
-            }
-        } catch (err) {
-            console.error('Error generating code:', err);
-            setError('An error occurred while connecting to the copilot service.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleRefactorCode = async () => {
-        if (!activeFile || !activeFile.content || !activeFile.content.trim()) {
-            setError('No code to refactor. Please open a file with content.');
+    const handleGenerate = () => {
+        if (!prompt.trim()) {
+            toast.error('Please enter a prompt.');
             return;
         }
-        if (!customInput.trim()) {
-            setError('Please provide refactoring instructions.');
-            return;
-        }
+        setIsLoading(true);
+        setGeneratedCode('');
+        socketService.emitCopilotPrompt(prompt);
+    };
 
-        setLoading(true);
-        setError(null);
-        setExecutionResult(null);
-
-        try {
-            const language = activeFile ? getLanguageFromExtension(activeFile.name) : 'javascript';
-            const prompt = `Refactor the following ${language} code based on these instructions: ${customInput}\n\nCode:\n${activeFile?.content || ''}`;
-
-            const res = await fetch('http://localhost:3002/api/copilot/refactor', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ prompt }),
-            });
-
-            const data = await res.json();
-            if (res.ok) {
-                setExecutionResult({ output: data.refactoredCode });
-            } else {
-                setError(data.message || 'Failed to refactor code');
-            }
-        } catch (err) {
-            console.error('Error refactoring code:', err);
-            setError('An error occurred while connecting to the copilot service.');
-        } finally {
-            setLoading(false);
-        }
+    const handleCopy = () => {
+        navigator.clipboard.writeText(generatedCode);
+        toast.success('Code copied to clipboard!');
     };
 
     return (
-        <div className="file-panel">
-            <div className="file-panel-header">
-                <h3>AI Copilot</h3>
-                {activeFile && (
-                    <div className="active-file-info">
-                        <span>Active File: {activeFile.name}</span>
-                    </div>
-                )}
+        <div className="flex flex-col h-full bg-[#36393f] text-gray-200 p-4 space-y-4">
+            {/* Header */}
+            <div className="pb-2 border-b border-gray-500">
+                <h2 className="text-lg font-semibold text-white">Copilot</h2>
             </div>
-            <div className="copilot-content">
-                <div className="copilot-suggestions">
-                    <h4>Code Suggestions</h4>
-                    <div className="suggestion-list">
-                        <div className="suggestion-item">
-                            <p>I can help you with:</p>
-                            <ul>
-                                <li>Code completion and suggestions</li>
-                                <li>Debugging assistance</li>
-                                <li>Code explanations</li>
-                                <li>Best practices</li>
-                            </ul>
-                        </div>
+
+            {/* Prompt Input */}
+            <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="write the code of sum in c++"
+                className="w-full h-24 p-2 bg-[#2f3136] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                disabled={isLoading}
+            />
+
+            {/* Generate Button */}
+            <button
+                onClick={handleGenerate}
+                disabled={isLoading}
+                className="w-full py-2 px-4 bg-green-500 text-white font-bold rounded-md hover:bg-green-600 disabled:bg-gray-500 disabled:cursor-not-allowed transition-colors"
+            >
+                {isLoading ? 'Generating...' : 'Generate Code'}
+            </button>
+
+            {/* Response Area */}
+            {generatedCode && (
+                <div className="flex-1 bg-[#1e1e1e] rounded-md overflow-hidden relative">
+                    <div className="p-4 overflow-y-auto h-full">
+                         <SyntaxHighlighter language="cpp" style={vscDarkPlus} showLineNumbers>
+                            {displayedCode}
+                        </SyntaxHighlighter>
                     </div>
+                    <button
+                        onClick={handleCopy}
+                        className="absolute top-2 right-2 p-1.5 bg-gray-700 rounded-md hover:bg-gray-600"
+                        title="Copy code"
+                    >
+                        <ClipboardIcon className="h-5 w-5 text-gray-300" />
+                    </button>
                 </div>
-                <div className="input-output-area">
-                    <div className="input-section">
-                        <h4>Custom Input</h4>
-                        <textarea
-                            className="custom-input-textarea"
-                            value={customInput}
-                            onChange={(e) => setCustomInput(e.target.value)}
-                            placeholder="Enter custom input here (e.g., for input() calls in Python)"
-                        />
-                    </div>
-                    <div className="output-section">
-                        <h4>Execution Result</h4>
-                        <pre className={`execution-result-pre ${executionResult?.error ? 'error' : ''}`}>
-                            {executionResult?.error || executionResult?.output || 'No output yet.'}
-                        </pre>
-                    </div>
-                    <div className="copilot-actions">
-                        <button 
-                            className="run-button"
-                            onClick={handleExecuteCode}
-                            disabled={!activeFile || loading}
-                        >
-                            ▶️ Run Code
-                        </button>
-                        <button 
-                            className="generate-button"
-                            onClick={handleGenerateCode}
-                            disabled={!activeFile || loading}
-                        >
-                            Generate Code
-                        </button>
-                        <button 
-                            className="refactor-button"
-                            onClick={handleRefactorCode}
-                            disabled={!activeFile || loading}
-                        >
-                            Refactor Code
-                        </button>
-                    </div>
-                </div>
-                {loading && <p>Loading...</p>}
-                {error && <p className="error-message">{error}</p>}
-            </div>
+            )}
         </div>
     );
 }; 
