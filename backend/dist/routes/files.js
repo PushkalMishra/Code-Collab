@@ -79,15 +79,10 @@ router.get('/my-files', auth_1.default, async (req, res) => {
 // Update file content
 router.patch('/:fileId', auth_1.default, async (req, res) => {
     try {
-        const file = await File_1.default.findOne({
-            _id: req.params.fileId,
-            $or: [
-                { owner: req.user?._id },
-                { sharedWith: req.user?._id }
-            ]
-        });
+        // Allow any authenticated user to update any file
+        const file = await File_1.default.findById(req.params.fileId);
         if (!file) {
-            return res.status(404).json({ message: 'File not found or access denied' });
+            return res.status(404).json({ message: 'File not found' });
         }
         const { content, name, language } = req.body;
         if (content !== undefined)

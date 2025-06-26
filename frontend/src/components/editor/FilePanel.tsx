@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { useFile } from '../../context/FileContext';
 import { useAuth } from '../../context/AuthContext';
-import { DocumentPlusIcon, FolderPlusIcon, ArrowDownTrayIcon, FolderOpenIcon, FolderIcon } from '@heroicons/react/24/outline';
+import { DocumentPlusIcon, FolderPlusIcon, ArrowDownTrayIcon, FolderOpenIcon, FolderIcon, ShareIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { File as PersistentFile } from '../../services/fileService';
 import { FileSystemItem } from '../../types/file';
 import { getLanguageIcon } from '../../utils/language-icons';
+import { useSocket } from '../../context/SocketContext';
 
 const FileItemDisplay: React.FC<{ item: FileSystemItem, onOpenFile: (file: FileSystemItem) => void }> = ({ item, onOpenFile }) => {
+    const { user } = useAuth();
+    const { files, deletePersistentFile } = useFile();
+    const { socket } = useSocket();
     if (item.type === 'directory') {
         return (
             <div className="flex items-center px-4 py-1.5 cursor-pointer text-sm">
@@ -17,13 +21,57 @@ const FileItemDisplay: React.FC<{ item: FileSystemItem, onOpenFile: (file: FileS
     }
 
     const { abbr, color } = getLanguageIcon(item.name);
+    // Find the persistent file object
+    const persistentFile = files.find(f => f._id === item.id);
+    const isOwner = persistentFile && user && persistentFile.owner && persistentFile.owner._id === user.userId;
+    const handleShare = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (socket && persistentFile) {
+            socket.emit('file-created', persistentFile);
+        }
+    };
+    const handleDelete = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!persistentFile) return;
+        if (!isOwner) {
+            window.alert('Only the owner can delete this file.');
+            return;
+        }
+        try {
+            await deletePersistentFile(persistentFile._id);
+        } catch (err) {
+            window.alert('Failed to delete file.');
+        }
+    };
     return (
         <div
-            className={`flex items-center px-4 py-1.5 cursor-pointer text-sm hover:bg-gray-700`}
+            className={
+                `flex items-center px-4 py-1.5 cursor-pointer text-sm hover:bg-gray-700 justify-between group`
+            }
             onClick={() => onOpenFile(item)}
         >
-            <span className={`${color} mr-2 font-mono text-xs`}>{abbr}</span>
-            <span>{item.name}</span>
+            <div className="flex items-center">
+                <span className={`${color} mr-2 font-mono text-xs`}>{abbr}</span>
+                <span>{item.name}</span>
+            </div>
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                <button
+                    className="p-1 hover:bg-gray-600 rounded"
+                    title="Re-share file to room"
+                    onClick={handleShare}
+                    onMouseDown={e => e.stopPropagation()}
+                >
+                    <ShareIcon className="h-4 w-4 text-blue-400" />
+                </button>
+                <button
+                    className="p-1 hover:bg-gray-600 rounded"
+                    title="Delete file"
+                    onClick={handleDelete}
+                    onMouseDown={e => e.stopPropagation()}
+                >
+                    <TrashIcon className="h-4 w-4 text-red-400" />
+                </button>
+            </div>
         </div>
     );
 };
