@@ -31,7 +31,7 @@ const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, onLogout }) => {
       </div>
       
       <div className="hidden md:flex items-center space-x-8">
-        <Link to="/" className="text-gray-300 hover:text-white transition-colors">Course</Link>
+        <Link to="/" className="text-gray-300 hover:text-white transition-colors">Home</Link>
         <Link to="/home" onClick={handleCategoriesClick} className="text-gray-300 hover:text-white transition-colors">Create Room</Link>
         <Link to="/about-us" className="text-gray-300 hover:text-white transition-colors">About us</Link>
       </div>

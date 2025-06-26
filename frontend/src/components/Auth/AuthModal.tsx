@@ -16,7 +16,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose }) => {
 
   const handleLogin = async () => {
     try {
-      const response = await fetch('http://localhost:3002/api/login', {
+      const response = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -37,7 +37,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose }) => {
 
   const handleRegister = async () => {
     try {
-      const response = await fetch('http://localhost:3002/api/register', {
+      const response = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, password, fullName, phoneNumber }),

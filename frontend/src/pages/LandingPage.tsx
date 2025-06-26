@@ -8,14 +8,14 @@ import { useTypingEffect } from '../hooks/useTypingEffect';
 const LandingPage = () => {
   const { isLoggedIn, logout } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [text, setText] = useState('Lead Generation Specialist for Online Businesses');
+  const [text, setText] = useState('Collaborate, Code, and Create Together in Real Time');
   const typedText = useTypingEffect(text, 50);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setText('');
       setTimeout(() => {
-        setText('Lead Generation Specialist for Online Businesses');
+        setText('Collaborate, Code, and Create Together in Real Time');
       }, 100);
     }, 4000); // Repeat every 4 seconds
 
@@ -28,12 +28,12 @@ const LandingPage = () => {
       <main className="px-6 lg:px-12 py-12 lg:py-24">
         <div className="flex flex-col lg:flex-row items-center">
           <div className="lg:w-1/2 lg:pr-12 text-center lg:text-left">
-            <p className="text-lg text-gray-400 mb-2">Marketing Agency</p>
+            <p className="text-lg text-gray-400 mb-2">CodeCollab</p>
             <h1 className="text-3xl lg:text-5xl font-bold leading-tight mb-4 h-22 lg:h-31.5">
               {typedText}
             </h1>
             <p className="text-lg text-gray-300 mb-8">
-              We help business owners increase their revenue. Our team of unique specialists can help you achieve your business goals.
+            Empowering developers and teams to build, share, and innovate seamlessly—experience live code collaboration like never before
             </p>
             <button
               onClick={() => setIsModalOpen(true)}

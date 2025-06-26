@@ -8,6 +8,7 @@ const http_1 = require("http");
 const socket_io_1 = require("socket.io");
 const cors_1 = __importDefault(require("cors"));
 const uuid_1 = require("uuid");
+const path_1 = __importDefault(require("path"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
@@ -271,6 +272,10 @@ app.post('/api/login', async (req, res) => {
         console.error('Error during login:', error);
         res.status(500).json({ message: 'Internal server error.' });
     }
+});
+app.use(express_1.default.static(path_1.default.join(__dirname, '../../frontend/build')));
+app.get('*', (req, res) => {
+    res.sendFile(path_1.default.join(__dirname, '../../frontend/build', 'index.html'));
 });
 const PORT = process.env.PORT || 3002;
 httpServer.listen(PORT, () => {

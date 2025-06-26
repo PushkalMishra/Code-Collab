@@ -3,16 +3,8 @@
   "version": "1.0.0",
   "description": "Real-time collaborative code editor",
   "scripts": {
-    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
-    "start:backend": "npm run build --prefix backend && npm run start --prefix backend",
-    "start:frontend": "npm run start --prefix frontend",
-    "build": "npm run build --prefix backend && npm run build --prefix frontend",
-    "build:backend": "npm run build --prefix backend",
-    "build:frontend": "npm run build --prefix frontend",
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "npm run dev --prefix backend",
-    "dev:frontend": "npm run start --prefix frontend",
-    "test": "npm run test --prefix backend && npm run test --prefix frontend"
+    "build": "cd frontend && npm install && npm run build && cd ../backend && npm install && npm run build",
+    "start": "cd backend && npm run start"
   },
   "devDependencies": {
     "@types/axios": "^0.9.36",

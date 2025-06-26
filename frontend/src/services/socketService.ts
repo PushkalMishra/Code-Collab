@@ -23,7 +23,7 @@ class SocketService {
       this.currentRoomId = roomId;
       this.currentUsername = username;
 
-      this.socket = io('http://localhost:3002', {
+      this.socket = io('/', {
         query: { roomId, username },
         reconnectionAttempts: 5,
         reconnectionDelay: 1000,

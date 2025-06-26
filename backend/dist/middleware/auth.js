@@ -10,7 +10,11 @@ const auth = (req, res, next) => {
         if (!token) {
             throw new Error('No token provided');
         }
-        const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET || 'supersecretjwtkey');
+        const secret = process.env.JWT_SECRET;
+        if (!secret) {
+            throw new Error('JWT_SECRET is not defined');
+        }
+        const decoded = jsonwebtoken_1.default.verify(token, secret);
         req.user = { _id: decoded.userId };
         console.log('Auth middleware: Real user ID assigned. req.user:', req.user);
         next();

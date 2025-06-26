@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3002/api/files';
-
+// const API_URL = 'http://localhost:3002/api/files';
+const API_URL = '/api/files';
 // Add a response interceptor
 axios.interceptors.response.use(
   response => response,
