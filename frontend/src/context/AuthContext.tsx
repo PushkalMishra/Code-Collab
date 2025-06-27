@@ -20,9 +20,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const storedEmail = localStorage.getItem('email');
     const storedUserId = localStorage.getItem('userId');
 
-    if (token && storedUsername && storedEmail && storedUserId) {
+    if (token && storedUsername && storedUserId) {
       setIsLoggedIn(true);
-      setUser({ username: storedUsername, email: storedEmail, userId: storedUserId });
+      setUser({ username: storedUsername, email: storedEmail || '', userId: storedUserId });
     }
   }, []);
 

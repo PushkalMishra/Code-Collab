@@ -266,7 +266,13 @@ app.post('/api/login', async (req, res) => {
         const token = jsonwebtoken_1.default.sign({ userId: user._id, username: user.username, email: user.email }, process.env.JWT_SECRET || 'supersecretjwtkey', // Use a strong secret from environment variables
         { expiresIn: '1h' } // Token expires in 1 hour
         );
-        res.status(200).json({ message: 'Logged in successfully.', token, username: user.username });
+        res.status(200).json({
+            message: 'Logged in successfully.',
+            token,
+            username: user.username,
+            userId: user._id,
+            email: user.email
+        });
     }
     catch (error) {
         console.error('Error during login:', error);

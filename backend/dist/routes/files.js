@@ -121,14 +121,17 @@ router.post('/:fileId/share', auth_1.default, async (req, res) => {
 // Delete file
 router.delete('/:fileId', auth_1.default, async (req, res) => {
     try {
-        const file = await File_1.default.findOne({
-            _id: req.params.fileId,
-            owner: req.user?._id
-        });
+        const file = await File_1.default.findById(req.params.fileId);
         if (!file) {
-            return res.status(404).json({ message: 'File not found or access denied' });
+            return res.status(404).json({ message: 'File not found' });
         }
-        await file.deleteOne(); // Changed from remove() to deleteOne() for Mongoose 6+
+        // Debug log for owner comparison
+        console.log('DEBUG DELETE: file.owner =', file.owner, 'typeof:', typeof file.owner, 'req.user._id =', req.user?._id, 'typeof:', typeof req.user?._id);
+        console.log('file.owner.toString() === req.user._id.toString():', file.owner.toString() === req.user?._id.toString());
+        if (file.owner.toString() !== req.user?._id.toString()) {
+            return res.status(403).json({ message: 'Only the owner can delete the file' });
+        }
+        await file.deleteOne();
         res.json({ message: 'File deleted successfully' });
     }
     catch (error) {

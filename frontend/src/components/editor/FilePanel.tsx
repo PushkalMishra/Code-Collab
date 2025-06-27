@@ -23,7 +23,23 @@ const FileItemDisplay: React.FC<{ item: FileSystemItem, onOpenFile: (file: FileS
     const { abbr, color } = getLanguageIcon(item.name);
     // Find the persistent file object
     const persistentFile = files.find(f => f._id === item.id);
-    const isOwner = persistentFile && user && persistentFile.owner && persistentFile.owner._id === user.userId;
+    console.log('DEBUG: persistentFile.owner', persistentFile?.owner, 'user', user);
+    // const isOwner =
+    //   persistentFile &&
+    //   user &&
+    //   persistentFile.owner &&
+    //   (
+    //     (persistentFile.owner._id && persistentFile.owner._id === user.userId) ||
+    //     (persistentFile.owner.username && persistentFile.owner.username === user.username)
+    //   );
+    const isOwner =
+  persistentFile &&
+  user &&
+  persistentFile.owner &&
+  (
+    (typeof persistentFile.owner === 'object' && persistentFile.owner._id === user.userId) ||
+    (typeof persistentFile.owner === 'string' && persistentFile.owner === user.userId)
+  );
     const handleShare = (e: React.MouseEvent) => {
         e.stopPropagation();
         if (socket && persistentFile) {
@@ -33,6 +49,7 @@ const FileItemDisplay: React.FC<{ item: FileSystemItem, onOpenFile: (file: FileS
     const handleDelete = async (e: React.MouseEvent) => {
         e.stopPropagation();
         if (!persistentFile) return;
+        console.log('DEBUG owner:', persistentFile?.owner, 'userId:', user?.userId);
         if (!isOwner) {
             window.alert('Only the owner can delete this file.');
             return;
