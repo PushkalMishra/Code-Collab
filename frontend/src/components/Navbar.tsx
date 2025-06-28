@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext'; // Import useAuth
+import { useAuth } from '../context/AuthContext';
+import AuthModal from './Auth/AuthModal';
 
 interface NavbarProps {
   isLoggedIn: boolean;
@@ -9,16 +10,39 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, onLogout }) => {
   const navigate = useNavigate();
-  const { login } = useAuth(); // Destructure login from useAuth, though not directly used here for now
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Helper function to check if JWT token is expired
+  const isTokenExpired = (token: string): boolean => {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Date.now() / 1000;
+      return payload.exp < currentTime;
+    } catch (error) {
+      return true; // If we can't decode the token, consider it expired
+    }
+  };
 
   const handleCategoriesClick = (event: React.MouseEvent) => {
+    event.preventDefault(); // Prevent default link navigation
+    
     if (!isLoggedIn) {
-      event.preventDefault(); // Prevent default link navigation
-      alert('Please login first to access this page.');
-    } else {
-      // If logged in, navigation will proceed normally via Link or could be explicitly navigated
-      navigate('/home');
+      // Show auth modal if not logged in
+      setIsModalOpen(true);
+      return;
     }
+
+    // Check if token is expired
+    const token = localStorage.getItem('token');
+    if (!token || isTokenExpired(token)) {
+      // Token is expired, logout and show auth modal
+      onLogout();
+      setIsModalOpen(true);
+      return;
+    }
+
+    // If logged in and token is valid, navigate to home
+    navigate('/home');
   };
 
   return (
@@ -46,12 +70,15 @@ const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, onLogout }) => {
           </button>
         ) : (
           <button 
+            onClick={() => setIsModalOpen(true)}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-all duration-200 hover:scale-105"
           >
             Get Started
           </button>
         )}
       </div>
+      
+      {isModalOpen && <AuthModal onClose={() => setIsModalOpen(false)} />}
     </nav>
   );
 };

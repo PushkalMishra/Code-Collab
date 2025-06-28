@@ -325,7 +325,7 @@ app.post('/api/login', async (req, res) => {
     const token = jwt.sign(
       { userId: user._id, username: user.username, email: user.email },
       process.env.JWT_SECRET || 'supersecretjwtkey', // Use a strong secret from environment variables
-      { expiresIn: '1h' } // Token expires in 1 hour
+      { expiresIn: '1hr' } // Token expires in 1 hour
     );
 
     res.status(200).json({
