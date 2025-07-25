@@ -4,12 +4,14 @@ import RoomForm from '../components/RoomForm';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import AuthModal from '../components/Auth/AuthModal';
+import { isTokenExpired } from '../utils/tokenUtils';
 
 const Home: React.FC = () => {
   const [roomId, setRoomId] = useState('');
   const [username, setUsername] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<'join' | 'create' | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { isLoggedIn, logout } = useAuth();
@@ -21,9 +23,19 @@ const Home: React.FC = () => {
       const urlRoomId = pathParts[2];
       if (urlRoomId) {
         setRoomId(urlRoomId);
+        
+        // If user is logged in but token is expired, logout and show auth modal
+        if (isLoggedIn) {
+          const token = localStorage.getItem('token');
+          if (!token || isTokenExpired(token)) {
+            logout();
+            setPendingAction('join');
+            setIsModalOpen(true);
+          }
+        }
       }
     }
-  }, [location]);
+  }, [location, isLoggedIn, logout]);
 
   // If user logs in while modal is open and there is a pending action, perform it
   React.useEffect(() => {
@@ -38,23 +50,29 @@ const Home: React.FC = () => {
     }
   }, [isLoggedIn, isModalOpen, pendingAction]);
 
+  const clearError = () => {
+    setErrorMessage(null);
+  };
+
   const doJoin = () => {
     if (!username.trim()) {
-      alert('Please enter a username');
+      setErrorMessage('Please enter a username');
       return;
     }
     if (!roomId.trim()) {
-      alert('Please enter a Room ID');
+      setErrorMessage('Please enter a Room ID');
       return;
     }
+    clearError();
     navigate(`/editor/${roomId}`, { state: { username } });
   };
 
   const doCreate = () => {
     if (!username.trim()) {
-      alert('Please enter a username');
+      setErrorMessage('Please enter a username');
       return;
     }
+    clearError();
     const newRoomId = roomId || Math.random().toString(36).substr(2, 9);
     setRoomId(newRoomId);
     navigate(`/editor/${newRoomId}`, { state: { username } });
@@ -62,26 +80,55 @@ const Home: React.FC = () => {
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
+    clearError();
+    
+    // Check if user is logged in
     if (!isLoggedIn) {
       setPendingAction('join');
       setIsModalOpen(true);
       return;
     }
+
+    // Check if token is expired
+    const token = localStorage.getItem('token');
+    if (!token || isTokenExpired(token)) {
+      // Token is expired, logout and show auth modal
+      logout();
+      setPendingAction('join');
+      setIsModalOpen(true);
+      return;
+    }
+
     doJoin();
   };
 
   const generateRoomId = () => {
     const newRoomId = Math.random().toString(36).substr(2, 9);
     setRoomId(newRoomId);
+    clearError();
   };
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
+    clearError();
+    
+    // Check if user is logged in
     if (!isLoggedIn) {
       setPendingAction('create');
       setIsModalOpen(true);
       return;
     }
+
+    // Check if token is expired
+    const token = localStorage.getItem('token');
+    if (!token || isTokenExpired(token)) {
+      // Token is expired, logout and show auth modal
+      logout();
+      setPendingAction('create');
+      setIsModalOpen(true);
+      return;
+    }
+
     doCreate();
   };
 
@@ -98,6 +145,8 @@ const Home: React.FC = () => {
             handleJoin={handleJoin}
             handleCreate={handleCreate}
             generateRoomId={generateRoomId}
+            errorMessage={errorMessage}
+            clearError={clearError}
           />
         </div>
       </div>

@@ -264,7 +264,7 @@ app.post('/api/login', async (req, res) => {
         }
         // Generate JWT
         const token = jsonwebtoken_1.default.sign({ userId: user._id, username: user.username, email: user.email }, process.env.JWT_SECRET || 'supersecretjwtkey', // Use a strong secret from environment variables
-        { expiresIn: '2m' } // Token expires in 1 hour
+        { expiresIn: '24hr' } // Token expires in 1 hour
         );
         res.status(200).json({
             message: 'Logged in successfully.',

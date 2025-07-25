@@ -6,6 +6,7 @@ import { File as PersistentFile } from '../../services/fileService';
 import { FileSystemItem } from '../../types/file';
 import { getLanguageIcon } from '../../utils/language-icons';
 import { useSocket } from '../../context/SocketContext';
+import toast from 'react-hot-toast';
 
 const FileItemDisplay: React.FC<{ item: FileSystemItem, onOpenFile: (file: FileSystemItem) => void }> = ({ item, onOpenFile }) => {
     const { user } = useAuth();
@@ -51,13 +52,14 @@ const FileItemDisplay: React.FC<{ item: FileSystemItem, onOpenFile: (file: FileS
         if (!persistentFile) return;
         console.log('DEBUG owner:', persistentFile?.owner, 'userId:', user?.userId);
         if (!isOwner) {
-            window.alert('Only the owner can delete this file.');
+            toast.error('Only the owner can delete this file.');
             return;
         }
         try {
             await deletePersistentFile(persistentFile._id);
+            toast.success('File deleted successfully');
         } catch (err) {
-            window.alert('Failed to delete file.');
+            toast.error('Failed to delete file.');
         }
     };
     return (

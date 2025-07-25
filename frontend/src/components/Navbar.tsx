@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AuthModal from './Auth/AuthModal';
 import { HomeIcon, PlusCircleIcon, InformationCircleIcon, UserIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
+import { isTokenExpired } from '../utils/tokenUtils';
 
 interface NavbarProps {
   isLoggedIn: boolean;
@@ -13,17 +14,6 @@ const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, onLogout }) => {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  // Helper function to check if JWT token is expired
-  const isTokenExpired = (token: string): boolean => {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const currentTime = Date.now() / 1000;
-      return payload.exp < currentTime;
-    } catch (error) {
-      return true; // If we can't decode the token, consider it expired
-    }
-  };
 
   const handleCategoriesClick = (event: React.MouseEvent) => {
     event.preventDefault(); // Prevent default link navigation

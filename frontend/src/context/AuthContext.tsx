@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { isTokenExpired } from '../utils/tokenUtils';
 
 interface AuthContextType {
   isLoggedIn: boolean;
@@ -21,6 +22,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const storedUserId = localStorage.getItem('userId');
 
     if (token && storedUsername && storedUserId) {
+      // Check if token is expired
+      if (isTokenExpired(token)) {
+        // Token is expired, clear all auth data
+        localStorage.removeItem('token');
+        localStorage.removeItem('username');
+        localStorage.removeItem('email');
+        localStorage.removeItem('userId');
+        setIsLoggedIn(false);
+        setUser(null);
+        return;
+      }
+      
+      // Token is valid, set logged in state
       setIsLoggedIn(true);
       setUser({ username: storedUsername, email: storedEmail || '', userId: storedUserId });
     }

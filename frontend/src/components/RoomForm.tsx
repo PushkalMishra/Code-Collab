@@ -8,6 +8,8 @@ type RoomFormProps = {
   handleJoin: (e: React.FormEvent) => void;
   handleCreate: (e: React.FormEvent) => void;
   generateRoomId: () => void;
+  errorMessage?: string | null;
+  clearError: () => void;
 };
 
 const RoomForm: React.FC<RoomFormProps> = ({
@@ -18,7 +20,16 @@ const RoomForm: React.FC<RoomFormProps> = ({
   handleJoin,
   handleCreate,
   generateRoomId,
+  errorMessage,
+  clearError,
 }) => {
+  const handleInputChange = (setter: (value: string) => void, value: string) => {
+    setter(value);
+    if (errorMessage) {
+      clearError();
+    }
+  };
+
   return (
     <div className="text-center">
       <div className="flex justify-center items-center mb-4">
@@ -30,19 +41,26 @@ const RoomForm: React.FC<RoomFormProps> = ({
       </div>
       <p className="text-gray-400 mb-8">Code, Chat and Collaborate. It's All in Sync.</p>
       
+      {/* Error Message */}
+      {errorMessage && (
+        <div className="mb-4 p-3 bg-red-900 border border-red-700 text-red-200 rounded-lg text-sm">
+          {errorMessage}
+        </div>
+      )}
+      
       <form onSubmit={handleJoin} className="space-y-6">
         <input
           type="text"
           placeholder="Room Id"
           value={roomId}
-          onChange={e => setRoomId(e.target.value)}
+          onChange={e => handleInputChange(setRoomId, e.target.value)}
           className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <input
           type="text"
           placeholder="Username"
           value={username}
-          onChange={e => setUsername(e.target.value)}
+          onChange={e => handleInputChange(setUsername, e.target.value)}
           className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <button
