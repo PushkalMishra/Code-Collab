@@ -13,6 +13,7 @@ import dotenv from 'dotenv';
 import User from './models/User';
 import fileRoutes from './routes/files'; // Updated import path for files.ts
 import axios from 'axios';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 dotenv.config();
 
@@ -39,6 +40,9 @@ mongoose.connect(MONGODB_URI, {
   console.error('MongoDB connection error:', err);
   process.exit(1);
 });
+
+// Initialize Gemini AI
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 // Store active rooms and their users
 interface Room {
@@ -268,6 +272,35 @@ io.on('connection', (socket) => {
         output: '',
         error: e?.response?.data?.message || e.message || 'Execution failed',
       });
+    }
+  });
+
+  // Handle copilot prompts
+  socket.on('copilot-prompt', async (prompt: string) => {
+    try {
+      // console.log('Received copilot prompt:', prompt);
+      
+      // Get the generative model
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      
+      // Create a system prompt for code generation
+      const systemPrompt = `You are a helpful AI coding assistant. Generate clean, efficient, reponse based on the user's request.`;
+      
+      const fullPrompt = `${systemPrompt}\n\nUser request: ${prompt}`;
+      
+      // Generate content
+      const result = await model.generateContent(fullPrompt);
+      const response = await result.response;
+      const generatedCode = response.text();
+      
+      // console.log('Generated code:', generatedCode);
+      
+      // Send the response back to the client
+      socket.emit('copilot-response', generatedCode);
+      
+    } catch (error: any) {
+      console.error('Error generating code with Gemini:', error);
+      socket.emit('copilot-error', error.message || 'Failed to generate code');
     }
   });
 });

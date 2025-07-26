@@ -27,9 +27,9 @@ const EditorContent: React.FC = () => {
 
     const { socket } = useAppContext();
 
-    if (!isConnected) {
-        toast.error('Disconnected from server. Please refresh the page.');
-    }
+    // if (!isConnected) {
+    //     toast.error('Disconnected from server. Please refresh the page.');
+    // }
 
     if (!roomId) {
         return <div>Invalid room ID</div>;

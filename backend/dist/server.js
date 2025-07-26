@@ -16,6 +16,7 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const User_1 = __importDefault(require("./models/User"));
 const files_1 = __importDefault(require("./routes/files")); // Updated import path for files.ts
 const axios_1 = __importDefault(require("axios"));
+const generative_ai_1 = require("@google/generative-ai");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const httpServer = (0, http_1.createServer)(app);
@@ -38,6 +39,8 @@ mongoose_1.default.connect(MONGODB_URI, {
     console.error('MongoDB connection error:', err);
     process.exit(1);
 });
+// Initialize Gemini AI
+const genAI = new generative_ai_1.GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const rooms = new Map();
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
@@ -218,6 +221,28 @@ io.on('connection', (socket) => {
                 output: '',
                 error: e?.response?.data?.message || e.message || 'Execution failed',
             });
+        }
+    });
+    // Handle copilot prompts
+    socket.on('copilot-prompt', async (prompt) => {
+        try {
+            // console.log('Received copilot prompt:', prompt);
+            // Get the generative model
+            const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+            // Create a system prompt for code generation
+            const systemPrompt = `You are a helpful AI coding assistant. Generate clean, efficient, reponse based on the user's request.`;
+            const fullPrompt = `${systemPrompt}\n\nUser request: ${prompt}`;
+            // Generate content
+            const result = await model.generateContent(fullPrompt);
+            const response = await result.response;
+            const generatedCode = response.text();
+            // console.log('Generated code:', generatedCode);
+            // Send the response back to the client
+            socket.emit('copilot-response', generatedCode);
+        }
+        catch (error) {
+            console.error('Error generating code with Gemini:', error);
+            socket.emit('copilot-error', error.message || 'Failed to generate code');
         }
     });
 });
